@@ -9,14 +9,13 @@
     <style>
         /* Estilos personalizados */
         .bg-login-1 {
-            /* Simula el overlay rojo oscuro sobre una imagen de fondo */
             background: linear-gradient(135deg, rgba(166, 20, 20, 0.95) 0%, rgba(166, 20, 20, 0.85) 40%, rgba(0, 0, 0, 0.2) 100%), 
                         url('https://via.placeholder.com/1920x1080?text=Fondo+ITCA') no-repeat center center;
             background-size: cover;
             color: white;
         }
         .text-gold {
-            color: #d4a017; /* Color dorado del texto */
+            color: #d4a017;
         }
         .login-card {
             border-radius: 12px;
@@ -24,7 +23,7 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
         .btn-red {
-            background-color: #a61414; /* Rojo institucional */
+            background-color: #a61414;
             color: white;
             font-weight: 600;
         }
@@ -69,20 +68,26 @@
                 <div class="card login-card border-0 bg-white">
                     <div class="card-body">
                         <h4 class="text-center fw-bold mb-4 text-dark">Inicia sesión</h4>
-                        <form>
+                        
+                        <!-- Contenedor para Alertas Condicionales -->
+                        <div id="alertError" class="alert alert-danger d-none text-center" role="alert">
+                            <!-- El mensaje de error se inyectará aquí con JS -->
+                        </div>
+
+                        <form id="loginForm">
                             <div class="mb-3">
                                 <label for="carnet" class="form-label text-dark fw-medium">Carnet</label>
-                                <input type="text" class="form-control py-2" id="carnet" placeholder="Ingresa tu número de carnet">
+                                <input type="text" class="form-control py-2" id="carnet" placeholder="Ingresa tu número de carnet" required>
                             </div>
                             <div class="mb-4">
                                 <label for="password" class="form-label text-dark fw-medium">Contraseña</label>
-                                <input type="password" class="form-control py-2" id="password" placeholder="Ingresa tu contraseña">
+                                <input type="password" class="form-control py-2" id="password" placeholder="Ingresa tu contraseña" required>
                             </div>
                             <div class="d-grid mt-2">
-                                <button type="submit" class="btn btn-red py-2">INGRESAR</button>
+                                <button type="submit" class="btn btn-red py-2" id="btnLogin">INGRESAR</button>
                             </div>
                         </form>
-                    </div>Ñ
+                    </div>
                 </div>
             </div>
 
@@ -91,5 +96,58 @@
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- LÓGICA DE VALIDACIÓN (Simulando H7 en Vanilla JS) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 3. RUTAS PROTEGIDAS (Simulación):
+            // Si el usuario ya tiene sesión iniciada, lo mandamos al dashboard
+            if (localStorage.getItem("token_acceso")) {
+                window.location.href = "dashboard.html";
+            }
+
+            const loginForm = document.getElementById("loginForm");
+            const alertError = document.getElementById("alertError");
+            const inputCarnet = document.getElementById("carnet");
+            const inputPassword = document.getElementById("password");
+
+            // 1. CAPTURAR CREDENCIALES
+            loginForm.addEventListener("submit", function(e) {
+                e.preventDefault(); // Evita que la página se recargue
+
+                const carnetValue = inputCarnet.value.trim();
+                const passwordValue = inputPassword.value.trim();
+
+                // Simulamos una base de datos de estudiantes
+                const bdSimulada = {
+                    "012345": "secreto123", // carnet: contraseña
+                    "543210": "admin123"
+                };
+
+                // 2. RENDERIZADO CONDICIONAL DE ALERTAS
+                // Ocultar alerta previa por si existía
+                alertError.classList.add("d-none");
+                alertError.textContent = "";
+
+                // Validación contra nuestros "registros"
+                if (!bdSimulada.hasOwnProperty(carnetValue)) {
+                    // El carnet no existe en la BD simulada
+                    alertError.textContent = "Registro no encontrado. Verifica tu carnet.";
+                    alertError.classList.remove("d-none");
+                } else if (bdSimulada[carnetValue] !== passwordValue) {
+                    // El carnet existe pero la contraseña es incorrecta
+                    alertError.textContent = "Credenciales inválidas. Contraseña incorrecta.";
+                    alertError.classList.remove("d-none");
+                } else {
+                    // Simular inicio de sesión exitoso
+                    // Guardamos un token falso en el almacenamiento local del navegador
+                    localStorage.setItem("token_acceso", "ey123456789.token.falso");
+                    
+                    // Redirigimos a la vista interna (Rutas Protegidas)
+                    window.location.href = "dashboard.html"; 
+                }
+            });
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solicitud de beca</title>
+<style>
+:root{
+  --tinta:#1d2b36; --suave:#5b6b78; --linea:#cfd8df; --fondo:#eef3f6;
+  --papel:#ffffff; --azul:#0f4c75; --azul-osc:#0a3652; --lima:#c8e36b; --error:#b3261e; --ok:#1b6e3c;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:16px/1.55 "Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:var(--azul-osc);color:#fff;padding:2.5rem 1.25rem}
+header div{max-width:760px;margin:0 auto}
+h1{font:700 2rem/1.15 Georgia,"Times New Roman",serif;margin:0 0 .5rem}
+header p{margin:0;max-width:55ch;color:#d5e4ee}
+main{max-width:760px;margin:2rem auto 3rem;padding:0 1.25rem}
+fieldset{background:var(--papel);border:1px solid var(--linea);border-radius:10px;margin:0 0 1.25rem;padding:1.25rem 1.5rem 1.5rem;border-left:6px solid var(--azul)}
+legend{font:700 1.2rem Georgia,"Times New Roman",serif;padding:0 .5rem;color:var(--azul-osc)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.25rem}
+.full{grid-column:1/-1}
+label{display:block;font-weight:600;font-size:.95rem;margin-bottom:.3rem}
+.ayuda{display:block;font-weight:400;font-size:.85rem;color:var(--suave)}
+input,select,textarea{width:100%;font:inherit;color:inherit;background:#fff;border:1px solid #9fb0bc;border-radius:6px;padding:.55rem .7rem}
+textarea{min-height:140px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--azul);outline-offset:1px}
+input:user-invalid,select:user-invalid,textarea:user-invalid{border-color:var(--error);background:#fff6f5}
+input[type=file]{padding:.45rem;border-style:dashed;background:#f7fafc;cursor:pointer}
+input[type=file]::file-selector-button{font:inherit;font-weight:600;border:0;border-radius:5px;background:var(--azul);color:#fff;padding:.4rem .8rem;margin-right:.7rem;cursor:pointer}
+.contador{text-align:right;font-size:.85rem;color:var(--suave)}
+.error{display:none;color:var(--error);font-size:.85rem;margin-top:.25rem}
+.docs .campo{padding:.9rem 0;border-top:1px solid var(--linea)}
+.docs .campo:first-of-type{border-top:0;padding-top:0}
+.radios{display:flex;gap:1.5rem;padding-top:.3rem}
+.radios label{display:flex;align-items:center;gap:.4rem;font-weight:400;margin:0}
+.radios input{width:auto}
+.acepto{display:flex;gap:.7rem;align-items:flex-start}
+.acepto input{width:1.2rem;height:1.2rem;margin-top:.2rem}
+.acepto label{font-weight:400;margin:0}
+.botones{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1rem}
+button{font:inherit;font-weight:700;border-radius:8px;padding:.75rem 1.5rem;cursor:pointer;border:2px solid var(--azul)}
+.primario{background:var(--lima);color:var(--azul-osc);border-color:var(--lima)}
+.primario:hover{background:#b9d759}
+.secundario{background:transparent;color:var(--azul)}
+.secundario:hover{background:#e1ecf3}
+#exito{display:none;background:var(--papel);border:1px solid var(--linea);border-left:6px solid var(--ok);border-radius:10px;padding:2rem 1.5rem}
+#exito h2{font:700 1.5rem Georgia,serif;margin:0 0 .5rem;color:var(--ok)}
+#codigo{font:700 1.4rem Georgia,serif;background:#eef7e6;padding:.3rem .8rem;border-radius:6px;display:inline-block}
+@media (max-width:620px){.grid{grid-template-columns:1fr}fieldset{padding:1rem}h1{font-size:1.6rem}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Solicitud de beca</h1>
+    <p>Completa tus datos y sube los documentos pedidos. Los campos marcados con * son obligatorios.</p>
+  </div>
+</header>
+
+<main>
+<form id="solicitud" novalidate>
+
+  <fieldset>
+    <legend>Datos personales</legend>
+    <div class="grid">
+      <div><label for="nombres">Nombres *</label><input id="nombres" name="nombres" type="text" autocomplete="given-name" required></div>
+      <div><label for="apellidos">Apellidos *</label><input id="apellidos" name="apellidos" type="text" autocomplete="family-name" required></div>
+      <div><label for="dui">Número de DUI *</label><input id="dui" name="dui" type="text" inputmode="numeric" placeholder="00000000-0" pattern="\d{8}-\d" required></div>
+      <div><label for="nacimiento">Fecha de nacimiento *</label><input id="nacimiento" name="nacimiento" type="date" required></div>
+      <div><label for="correo">Correo electrónico *</label><input id="correo" name="correo" type="email" autocomplete="email" required></div>
+      <div><label for="telefono">Teléfono *</label><input id="telefono" name="telefono" type="tel" autocomplete="tel" placeholder="7000-0000" pattern="\d{4}-?\d{4}" required></div>
+      <div>
+        <label for="departamento">Departamento *</label>
+        <select id="departamento" name="departamento" required>
+          <option value="">Selecciona</option>
+          <option>Ahuachapán</option><option>Cabañas</option><option>Chalatenango</option><option>Cuscatlán</option>
+          <option>La Libertad</option><option>La Paz</option><option>La Unión</option><option>Morazán</option>
+          <option>San Miguel</option><option>San Salvador</option><option>San Vicente</option><option>Santa Ana</option>
+          <option>Sonsonate</option><option>Usulután</option>
+        </select>
+      </div>
+      <div><label for="municipio">Municipio *</label><input id="municipio" name="municipio" type="text" required></div>
+      <div class="full"><label for="direccion">Dirección de residencia *</label><input id="direccion" name="direccion" type="text" autocomplete="street-address" required></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Datos académicos</legend>
+    <div class="grid">
+      <div><label for="carnet">Carnet estudiantil *</label><input id="carnet" name="carnet" type="text" required></div>
+      <div>
+        <label for="carrera">Carrera *</label>
+        <select id="carrera" name="carrera" required>
+          <option value="">Selecciona</option>
+          <option>Técnico en Ingeniería de Software</option>
+          <option>Técnico en Desarrollo de Aplicaciones</option>
+          <option>Técnico en Redes y Telecomunicaciones</option>
+          <option>Técnico en Electrónica</option>
+          <option>Otra</option>
+        </select>
+      </div>
+      <div>
+        <label for="ciclo">Ciclo o año que cursas *</label>
+        <select id="ciclo" name="ciclo" required>
+          <option value="">Selecciona</option>
+          <option>Primer año</option><option>Segundo año</option><option>Tercer año</option>
+        </select>
+      </div>
+      <div><label for="promedio">Promedio de notas (0 a 10) *</label><input id="promedio" name="promedio" type="number" min="0" max="10" step="0.01" required></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Situación socioeconómica</legend>
+    <div class="grid">
+      <div><label for="miembros">Personas que viven en tu hogar *</label><input id="miembros" name="miembros" type="number" min="1" max="30" required></div>
+      <div><label for="ingreso">Ingreso mensual familiar (USD) *</label><input id="ingreso" name="ingreso" type="number" min="0" step="0.01" required></div>
+      <div>
+        <label for="vivienda">Tipo de vivienda *</label>
+        <select id="vivienda" name="vivienda" required>
+          <option value="">Selecciona</option>
+          <option>Propia</option><option>Alquilada</option><option>Familiar</option><option>Otra</option>
+        </select>
+      </div>
+      <div>
+        <label>¿Trabajas actualmente? *</label>
+        <div class="radios">
+          <label><input type="radio" name="trabaja" value="si" required> Sí</label>
+          <label><input type="radio" name="trabaja" value="no"> No</label>
+        </div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Tipo de beca y motivos</legend>
+    <div class="grid">
+      <div class="full">
+        <label for="tipoBeca">Beca que solicitas *</label>
+        <select id="tipoBeca" name="tipoBeca" required>
+          <option value="">Selecciona</option>
+          <option>Beca por excelencia académica</option>
+          <option>Beca socioeconómica</option>
+          <option>Beca de transporte y alimentación</option>
+          <option>Beca de renovación</option>
+        </select>
+      </div>
+      <div class="full">
+        <label for="motivo">¿Por qué necesitas esta beca? *<span class="ayuda">Cuéntanos tu situación y tus metas. Mínimo 50 caracteres.</span></label>
+        <textarea id="motivo" name="motivo" maxlength="1000" minlength="50" required></textarea>
+        <div class="contador"><span id="cuenta">0</span> / 1000</div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset class="docs">
+    <legend>Documentos</legend>
+    <p class="ayuda" style="margin-top:0">Formatos permitidos: PDF, JPG o PNG. Tamaño máximo: 5 MB por archivo.</p>
+    <div class="campo"><label for="docDui">Copia del DUI *</label><input id="docDui" name="docDui" type="file" accept=".pdf,.jpg,.jpeg,.png" required><div class="error"></div></div>
+    <div class="campo"><label for="docNotas">Constancia o certificado de notas *</label><input id="docNotas" name="docNotas" type="file" accept=".pdf,.jpg,.jpeg,.png" required><div class="error"></div></div>
+    <div class="campo"><label for="docIngresos">Comprobante de ingresos familiares *</label><input id="docIngresos" name="docIngresos" type="file" accept=".pdf,.jpg,.jpeg,.png" required><div class="error"></div></div>
+    <div class="campo"><label for="docFoto">Fotografía tamaño carnet *</label><input id="docFoto" name="docFoto" type="file" accept=".jpg,.jpeg,.png" required><div class="error"></div></div>
+    <div class="campo"><label for="docCarta">Carta de recomendación <span class="ayuda" style="display:inline">(opcional)</span></label><input id="docCarta" name="docCarta" type="file" accept=".pdf"><div class="error"></div></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Declaración</legend>
+    <div class="acepto">
+      <input id="acepto" name="acepto" type="checkbox" required>
+      <label for="acepto">Declaro que la información y los documentos que presento son verdaderos, y entiendo que datos falsos pueden anular mi solicitud. *</label>
+    </div>
+  </fieldset>
+
+  <div class="botones">
+    <button type="submit" class="primario">Enviar solicitud</button>
+    <button type="reset" class="secundario" id="limpiar">Limpiar formulario</button>
+  </div>
+</form>
+
+<section id="exito" role="status" aria-live="polite" tabindex="-1">
+  <h2>Solicitud enviada</h2>
+  <p>Recibimos tu solicitud. Guarda este código para consultar su estado:</p>
+  <p><span id="codigo"></span></p>
+  <button type="button" class="secundario" id="nueva">Hacer otra solicitud</button>
+</section>
+</main>
+
+<script>
+const form = document.getElementById('solicitud');
+const exito = document.getElementById('exito');
+const MAX = 5 * 1024 * 1024;
+const EXT = ['pdf', 'jpg', 'jpeg', 'png'];
+
+// Contador de caracteres del motivo
+const motivo = document.getElementById('motivo');
+motivo.addEventListener('input', () => {
+  document.getElementById('cuenta').textContent = motivo.value.length;
+});
+
+// Validación de cada archivo: tamaño y formato
+function revisarArchivo(input) {
+  const aviso = input.parentElement.querySelector('.error');
+  const f = input.files[0];
+  let msg = '';
+  if (!f && input.required) msg = 'Sube este documento.';
+  else if (f) {
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!EXT.includes(ext) || (input.id === 'docCarta' && ext !== 'pdf')) msg = 'Formato no permitido. Usa ' + input.accept.replaceAll('.', '').replaceAll(',', ', ').toUpperCase() + '.';
+    else if (f.size > MAX) msg = 'El archivo pesa más de 5 MB. Sube uno más liviano.';
+  }
+  aviso.textContent = msg;
+  aviso.style.display = msg ? 'block' : 'none';
+  input.setCustomValidity(msg);
+  return !msg;
+}
+form.querySelectorAll('input[type=file]').forEach(i => i.addEventListener('change', () => revisarArchivo(i)));
+
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  let ok = true;
+  form.querySelectorAll('input[type=file]').forEach(i => { if (!revisarArchivo(i)) ok = false; });
+  if (!form.checkValidity() || !ok) {
+    form.reportValidity();
+    return;
+  }
+  // Aquí se enviarían los datos al servidor, por ejemplo:
+  // fetch('/api/solicitudes', { method: 'POST', body: new FormData(form) });
+  const codigo = 'BEC-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 90000) + 10000);
+  document.getElementById('codigo').textContent = codigo;
+  form.style.display = 'none';
+  exito.style.display = 'block';
+  exito.focus();
+  window.scrollTo({ top: 0 });
+});
+
+document.getElementById('limpiar').addEventListener('click', () => {
+  setTimeout(() => {
+    document.getElementById('cuenta').textContent = '0';
+    form.querySelectorAll('.error').forEach(a => { a.style.display = 'none'; });
+  });
+});
+
+document.getElementById('nueva').addEventListener('click', () => {
+  form.reset();
+  document.getElementById('cuenta').textContent = '0';
+  exito.style.display = 'none';
+  form.style.display = 'block';
+});
+</script>
+</body>
+</html>

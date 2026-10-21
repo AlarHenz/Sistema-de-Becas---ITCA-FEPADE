@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Beca - ITCA FEPADE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .top-navbar { background-color: #ba1212; color: white; }
+        .sidebar { min-height: calc(100vh - 56px); background-color: #f8f9fa; border-right: 1px solid #dee2e6; }
+        .sidebar-item { padding: 15px 20px; color: #333; text-decoration: none; display: block; }
+        .sidebar-item.active { background-color: #ba1212; color: white; }
+        .card-custom { border-radius: 10px; border: 1px solid #eaeaea; }
+        .form-control { background-color: #fcfcfc; }
+        .file-drop-area { border: 2px dashed #ccc; padding: 30px; text-align: center; border-radius: 8px; background-color: #fafafa; }
+        .text-red { color: #ba1212; }
+        .btn-red { background-color: #ba1212; color: white; }
+        .btn-outline-red { border: 1px solid #ba1212; color: #ba1212; }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navbar igual que el dashboard -->
+    <nav class="navbar top-navbar px-4">
+        <span class="navbar-brand mb-0 h1 fw-bold text-white fs-6">SISTEMA DE GESTIÓN DE BECAS</span>
+        <div class="text-white small">
+            <span class="fw-bold">María José López</span> &nbsp;|&nbsp; Estudiante
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 p-0 sidebar">
+                <a href="#" class="sidebar-item">Dashboard</a>
+                <a href="#" class="sidebar-item">Mis Solicitudes</a>
+                <a href="#" class="sidebar-item active">Solicitud de Beca</a>
+            </div>
+
+            <!-- Contenido Principal -->
+            <div class="col-md-10 p-5 bg-white">
+                <h3 class="fw-bold mb-1">Solicitud de Beca</h3>
+                <p class="text-muted mb-4">Completa el formulario para iniciar tu solicitud</p>
+
+                <!-- Stepper Superior -->
+                <div class="card card-custom p-3 mb-4 text-center d-flex flex-row justify-content-between align-items-center">
+                    <div class="w-100"><span class="badge rounded-pill bg-danger fs-6 px-3 py-2 mb-2">1</span><br><small class="text-danger fw-bold">Datos personales</small></div>
+                    <div style="height: 2px; background-color:#ccc; width: 100%;"></div>
+                    <div class="w-100"><span class="badge rounded-pill bg-light text-muted border fs-6 px-3 py-2 mb-2">2</span><br><small class="text-muted">Información académica</small></div>
+                    <div style="height: 2px; background-color:#ccc; width: 100%;"></div>
+                    <div class="w-100"><span class="badge rounded-pill bg-light text-muted border fs-6 px-3 py-2 mb-2">3</span><br><small class="text-muted">Documentos</small></div>
+                    <div style="height: 2px; background-color:#ccc; width: 100%;"></div>
+                    <div class="w-100"><span class="badge rounded-pill bg-light text-muted border fs-6 px-3 py-2 mb-2">4</span><br><small class="text-muted">Revisión y envío</small></div>
+                </div>
+
+                <!-- Formulario -->
+                <div class="card card-custom p-4">
+                    <h5 class="text-red fw-bold mb-4">Datos personales</h5>
+                    
+                    <form>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Nombres <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" value="María José">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Apellidos <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" value="López Hernández">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">DUI <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" value="12345678-9">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Fecha de nacimiento <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" value="2004-03-15">
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Correo electrónico <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" value="mariajose.lopez@itca.edu.sv">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Teléfono <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" value="7123-4567">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small">Documento Único de Identidad (DUI) <span class="text-danger">*</span></label>
+                            <div class="file-drop-area">
+                                <p class="mb-0">Arrastra tu archivo aquí o <span class="text-red fw-bold">selecciona</span></p>
+                                <small class="text-muted">Formato permitido: JPG, PNG, PDF. Tamaño máximo: 5 MB</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-red px-4">Guardar borrador</button>
+                            <button type="button" class="btn btn-red px-5">Siguiente</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

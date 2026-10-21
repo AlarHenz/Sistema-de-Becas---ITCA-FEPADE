@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ITCA FEPADE</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Estilos personalizados */
+        .bg-login-1 {
+            /* Simula el overlay rojo oscuro sobre una imagen de fondo */
+            background: linear-gradient(135deg, rgba(166, 20, 20, 0.95) 0%, rgba(166, 20, 20, 0.85) 40%, rgba(0, 0, 0, 0.2) 100%), 
+                        url('https://via.placeholder.com/1920x1080?text=Fondo+ITCA') no-repeat center center;
+            background-size: cover;
+            color: white;
+        }
+        .text-gold {
+            color: #d4a017; /* Color dorado del texto */
+        }
+        .login-card {
+            border-radius: 12px;
+            padding: 2.5rem 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .btn-red {
+            background-color: #a61414; /* Rojo institucional */
+            color: white;
+            font-weight: 600;
+        }
+        .btn-red:hover {
+            background-color: #851010;
+            color: white;
+        }
+        .form-control {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .gold-divider {
+            border-top: 3px solid #d4a017;
+            width: 80px;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-login-1 vh-100 d-flex align-items-center">
+
+    <div class="container">
+        <div class="row w-100 align-items-center">
+            
+            <!-- Sección de Textos (Izquierda) -->
+            <div class="col-lg-6 d-flex flex-column justify-content-center mb-5 mb-lg-0 px-4">
+                <h3 class="fw-bold mb-0">ITCA FEPADE</h3>
+                <p class="small mb-5 tracking-wide">TÉCNICOS E INGENIEROS</p>
+                
+                <h1 class="fw-bold display-4 lh-sm">
+                    Accede a tu<br>
+                    Sistema de<br>
+                    <span class="text-gold">Gestión de Becas</span>
+                </h1>
+                <div class="gold-divider my-4"></div>
+                <p class="fs-5" style="max-width: 400px;">
+                    Plataforma institucional para la gestión de solicitudes y seguimiento de becas.
+                </p>
+            </div>
+            
+            <!-- Sección del Formulario (Derecha) -->
+            <div class="col-lg-5 offset-lg-1">
+                <div class="card login-card border-0 bg-white">
+                    <div class="card-body">
+                        <h4 class="text-center fw-bold mb-4 text-dark">Inicia sesión</h4>
+                        <form>
+                            <div class="mb-3">
+                                <label for="carnet" class="form-label text-dark fw-medium">Carnet</label>
+                                <input type="text" class="form-control py-2" id="carnet" placeholder="Ingresa tu número de carnet">
+                            </div>
+                            <div class="mb-4">
+                                <label for="password" class="form-label text-dark fw-medium">Contraseña</label>
+                                <input type="password" class="form-control py-2" id="password" placeholder="Ingresa tu contraseña">
+                            </div>
+                            <div class="d-grid mt-2">
+                                <button type="submit" class="btn btn-red py-2">INGRESAR</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

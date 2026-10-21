@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subir documentos</title>
+<style>
+  :root {
+    --rojo: #B82306;
+    --rojo-oscuro: #951C05;
+    --rojo-suave: #A93628;
+    --dorado: #C9922D;
+    --dorado-claro: #FBF4E6;
+    --borde: #E2E2E2;
+    --texto: #2B2B2B;
+    --gris: #6F6F6F;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Open Sans", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    background: #fff;
+    color: var(--texto);
+    min-height: 100vh;
+  }
+  .banda {
+    background: var(--rojo);
+    height: 125px;
+    border-top: 3px solid #2B2B2B;
+  }
+  .tarjeta {
+    width: calc(100% - 32px);
+    max-width: 600px;
+    margin: -30px auto 48px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 40px 48px 44px;
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.14);
+  }
+  .tarjeta h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--rojo-suave);
+    padding-bottom: 18px;
+    margin-bottom: 26px;
+    border-bottom: 1px solid var(--borde);
+  }
+  .zona {
+    border: 2px dashed var(--dorado);
+    border-radius: 8px;
+    background: var(--dorado-claro);
+    padding: 44px 20px;
+    text-align: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .zona.activa {
+    background: #F6E7C6;
+    border-color: var(--rojo);
+  }
+  .zona svg {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 14px;
+  }
+  .zona p {
+    font-size: 17px;
+    color: var(--rojo-suave);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .zona span {
+    display: block;
+    font-size: 14px;
+    color: var(--gris);
+    margin-bottom: 20px;
+  }
+  .boton {
+    display: inline-block;
+    background: var(--rojo);
+    color: #fff;
+    border: 1px solid var(--rojo-oscuro);
+    border-radius: 2px;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .boton:hover { background: var(--rojo-oscuro); }
+  .boton:focus-visible { outline: 3px solid var(--dorado); outline-offset: 2px; }
+  input[type="file"] { display: none; }
+  .lista { list-style: none; margin-top: 24px; }
+  .lista li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--borde);
+    border-left: 4px solid var(--dorado);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  .lista .nombre {
+    font-size: 14px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lista .peso {
+    font-size: 13px;
+    color: var(--gris);
+    flex-shrink: 0;
+  }
+  .quitar {
+    background: none;
+    border: none;
+    color: var(--rojo);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+  .quitar:hover { color: var(--rojo-oscuro); }
+  .envio { display: none; margin-top: 8px; }
+  .envio.visible { display: block; }
+  .envio .boton { width: 100%; }
+  @media (max-width: 520px) {
+    .tarjeta { padding: 28px 20px 32px; }
+    .zona { padding: 32px 14px; }
+  }
+</style>
+</head>
+<body>
+  <div class="banda"></div>
+  <main class="tarjeta">
+    <h1>Subir documentos</h1>
+    <div class="zona" id="zona">
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M44 44h3a9 9 0 0 0 1.4-17.9A14 14 0 0 0 21 23a11 11 0 0 0 1 21h3" stroke="#C9922D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M32 52V30M24 37l8-8 8 8" stroke="#B82306" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p>Arrastra y suelta tus archivos aquí</p>
+      <span>o</span>
+      <button type="button" class="boton" id="seleccionar">Seleccionar archivos</button>
+      <input type="file" id="archivo" multiple>
+    </div>
+    <ul class="lista" id="lista"></ul>
+    <div class="envio" id="envio">
+      <button type="button" class="boton">Enviar</button>
+    </div>
+  </main>
+
+<script>
+  const zona = document.getElementById('zona');
+  const input = document.getElementById('archivo');
+  const boton = document.getElementById('seleccionar');
+  const lista = document.getElementById('lista');
+  const envio = document.getElementById('envio');
+  let archivos = [];
+
+  function formato(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function dibujar() {
+    lista.innerHTML = '';
+    archivos.forEach((f, i) => {
+      const li = document.createElement('li');
+      const nombre = document.createElement('span');
+      nombre.className = 'nombre';
+      nombre.textContent = f.name;
+      const peso = document.createElement('span');
+      peso.className = 'peso';
+      peso.textContent = formato(f.size);
+      const quitar = document.createElement('button');
+      quitar.type = 'button';
+      quitar.className = 'quitar';
+      quitar.innerHTML = '&times;';
+      quitar.addEventListener('click', () => {
+        archivos.splice(i, 1);
+        dibujar();
+      });
+      li.append(nombre, peso, quitar);
+      lista.appendChild(li);
+    });
+    envio.classList.toggle('visible', archivos.length > 0);
+  }
+
+  function agregar(fileList) {
+    archivos = archivos.concat(Array.from(fileList));
+    dibujar();
+  }
+
+  boton.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => {
+    agregar(input.files);
+    input.value = '';
+  });
+
+  ['dragenter', 'dragover'].forEach(ev =>
+    zona.addEventListener(ev, e => {
+      e.preventDefault();
+      zona.classList.add('activa');
+    })
+  );
+  ['dragleave', 'drop'].forEach(ev =>
+    zona.addEventListener(ev, e => {
+      e.preventDefault();
+      zona.classList.remove('activa');
+    })
+  );
+  zona.addEventListener('drop', e => agregar(e.dataTransfer.files));
+</script>
+</body>
+</html>

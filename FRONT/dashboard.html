@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Gestión de Becas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #fcfcfc; }
+        .top-navbar { background-color: #ba1212; color: white; }
+        .sidebar { min-height: calc(100vh - 56px); background-color: #f8f9fa; border-right: 1px solid #dee2e6; }
+        .sidebar-item { padding: 15px 20px; color: #333; text-decoration: none; display: block; font-weight: 500; }
+        .sidebar-item.active { background-color: #ba1212; color: white; }
+        .sidebar-item:hover:not(.active) { background-color: #e9ecef; }
+        .card-custom { border-radius: 10px; border: 1px solid #eaeaea; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .step-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .step-completed { background-color: #d4a017; color: white; }
+        .step-active { border: 2px solid #ba1212; color: #ba1212; background: white; }
+        .step-pending { border: 2px solid #ccc; color: #ccc; background: white; }
+        .step-line { flex-grow: 1; height: 2px; background-color: #ccc; margin: 0 10px; }
+        .step-line-active { background: linear-gradient(to right, #d4a017, #ba1212); }
+        .badge-aprobada { background-color: #28a745; }
+        .badge-revision { background-color: #f0ad4e; }
+        .badge-borrador { background-color: #868e96; }
+        .btn-red { background-color: #ba1212; color: white; }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navbar -->
+    <nav class="navbar top-navbar px-4">
+        <span class="navbar-brand mb-0 h1 fw-bold text-white fs-6">SISTEMA DE GESTIÓN DE BECAS <br><small class="fw-normal" style="font-size: 12px;">ITCA FEPADE</small></span>
+        <div class="text-white small">
+            <span class="fw-bold">María José López</span> &nbsp;|&nbsp; Estudiante
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 p-0 sidebar">
+                <a href="#" class="sidebar-item active">Dashboard</a>
+                <a href="#" class="sidebar-item">Mis Solicitudes</a>
+            </div>
+
+            <!-- Contenido Principal -->
+            <div class="col-md-10 p-5">
+                <h2 class="fw-bold mb-1">Bienvenida, María José</h2>
+                <p class="text-muted mb-4">Resumen de tu solicitud de beca</p>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <!-- Card Estado de Solicitud -->
+                        <div class="card card-custom p-4 mb-4">
+                            <h5 class="text-danger fw-bold mb-4">Estado de tu solicitud</h5>
+                            
+                            <div class="d-flex align-items-center mb-4 text-center">
+                                <div>
+                                    <div class="step-circle step-completed mx-auto">✓</div>
+                                    <small class="d-block mt-2 text-warning fw-bold">Registro</small>
+                                    <small class="text-muted" style="font-size: 11px;">Completado</small>
+                                </div>
+                                <div class="step-line step-line-active"></div>
+                                <div>
+                                    <div class="step-circle step-completed mx-auto">✓</div>
+                                    <small class="d-block mt-2 text-warning fw-bold">Datos personales</small>
+                                    <small class="text-muted" style="font-size: 11px;">Completado</small>
+                                </div>
+                                <div class="step-line step-line-active"></div>
+                                <div>
+                                    <div class="step-circle step-active mx-auto">3</div>
+                                    <small class="d-block mt-2 text-danger fw-bold">Documentos</small>
+                                    <small class="text-muted" style="font-size: 11px;">En progreso</small>
+                                </div>
+                                <div class="step-line"></div>
+                                <div>
+                                    <div class="step-circle step-pending mx-auto">4</div>
+                                    <small class="d-block mt-2 text-muted fw-bold">Revisión</small>
+                                    <small class="text-muted" style="font-size: 11px;">Pendiente</small>
+                                </div>
+                            </div>
+                            
+                            <p class="mb-0">Estás en el <strong>paso 3 de 4.</strong> Completa y carga tus documentos requeridos.</p>
+                        </div>
+
+                        <!-- Card Continuar Solicitud -->
+                        <div class="card card-custom p-4 d-flex flex-row justify-content-between align-items-center">
+                            <div>
+                                <h5 class="text-danger fw-bold mb-1">Continúa tu solicitud</h5>
+                                <p class="text-muted mb-0">Retoma donde lo dejaste y sigue avanzando.</p>
+                            </div>
+                            <button class="btn btn-red px-4 py-2">Continuar Solicitud</button>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Notificaciones -->
+                    <div class="col-lg-4">
+                        <div class="card card-custom p-4 h-100">
+                            <h5 class="text-danger fw-bold mb-4">Notificaciones de estado</h5>
+                            
+                            <div class="mb-3 border-bottom pb-3">
+                                <span class="badge badge-aprobada mb-2">Aprobada</span>
+                                <h6 class="fw-bold mb-1">Beca Aprobada</h6>
+                                <p class="text-muted small mb-1">Tu solicitud ha sido aprobada.</p>
+                                <small class="text-muted" style="font-size: 11px;">15 de mayo de 2024</small>
+                            </div>
+                            
+                            <div class="mb-3 border-bottom pb-3">
+                                <span class="badge badge-revision mb-2">En revisión</span>
+                                <h6 class="fw-bold mb-1">Estado de Beca ha cambiado</h6>
+                                <p class="text-muted small mb-1">Tu solicitud está en revisión.</p>
+                                <small class="text-muted" style="font-size: 11px;">12 de mayo de 2024</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <span class="badge badge-borrador mb-2">Borrador</span>
+                                <h6 class="fw-bold mb-1">Beca</h6>
+                                <p class="text-muted small mb-1">Tu solicitud se encuentra en borrador.</p>
+                                <small class="text-muted" style="font-size: 11px;">5 de mayo de 2024</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -58,4 +58,3 @@ CREATE TABLE solicitudes (
 CREATE INDEX idx_solicitudes_codigo ON solicitudes(codigo_solicitud);
 CREATE INDEX idx_solicitudes_estado ON solicitudes(id_estado_actual);
 CREATE INDEX idx_solicitudes_fecha ON solicitudes(fecha_solicitud);
-

@@ -53,3 +53,4 @@ ON DUPLICATE KEY UPDATE nombres = VALUES(nombres);
 -- 👑 ADMINISTRADOR: Carnet: ADMIN001 | Pass: password123
 -- 👤 ESTUDIANTE 2:  Carnet: 20240002 | Pass: password123
 -- ==========================================================
+

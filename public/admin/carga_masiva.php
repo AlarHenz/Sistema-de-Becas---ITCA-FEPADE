@@ -1,21 +1,23 @@
 <?php
 /**
  * public/admin/carga_masiva.php
- * Carga masiva de aspirantes desde archivo CSV (HU-02).
- * Actualizado con Bootstrap 5 respetando la identidad institucional ITCA FEPADE.
+ * Carga masiva de aspirantes desde archivo Excel (.xlsx) y CSV.
+ * Procesamiento nativo OpenXML con inserción masiva mediante PDO en MySQL.
+ * Interfaz con Bootstrap 5 respetando la identidad institucional ITCA FEPADE.
  */
 require_once '../../includes/auth.php';
 verificar_rol('administrador');
 
 require_once '../../config/database.php';
+require_once '../../includes/xlsx_reader.php';
 
 $mensaje_exito = '';
 $mensaje_error = '';
 $detalles_carga = null;
 
-// --- 1. Procesar el archivo CSV ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
-    $archivo = $_FILES['archivo_csv'];
+// --- 1. Procesar el archivo subido (.xlsx o .csv) ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) || isset($_FILES['archivo_xlsx']) || isset($_FILES['archivo_csv']))) {
+    $archivo = $_FILES['archivo_excel'] ?? ($_FILES['archivo_xlsx'] ?? $_FILES['archivo_csv']);
 
     if ($archivo['error'] !== UPLOAD_ERR_OK) {
         switch ($archivo['error']) {
@@ -24,195 +26,215 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                 $mensaje_error = 'El archivo supera el tamaño máximo permitido por el servidor.';
                 break;
             case UPLOAD_ERR_NO_FILE:
-                $mensaje_error = 'Por favor, selecciona un archivo CSV para cargar.';
+                $mensaje_error = 'Por favor, selecciona un archivo Excel (.xlsx) para cargar.';
                 break;
             default:
-                $mensaje_error = 'Ocurrió un error al subir el archivo (Código: ' . $archivo['error'] . ').';
+                $mensaje_error = 'Ocurrió un error al subir el archivo (Código de error: ' . $archivo['error'] . ').';
                 break;
         }
     } else {
         $extension = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
-        if ($extension !== 'csv') {
-            $mensaje_error = 'Formato de archivo inválido. El archivo debe tener extensión <strong>.csv</strong>.';
+        $filas_datos = [];
+
+        // Validar formato admitido
+        if (!in_array($extension, ['xlsx', 'csv'], true)) {
+            $mensaje_error = 'Formato no compatible. Por favor sube un archivo con formato <strong>.xlsx</strong> (Microsoft Excel) o <strong>.csv</strong>.';
         } else {
-            // Abrimos el archivo en modo lectura
-            $handle = fopen($archivo['tmp_name'], 'r');
-            if ($handle === false) {
-                $mensaje_error = 'No fue posible abrir el archivo para lectura.';
-            } else {
-                // Detectar y omitir BOM de UTF-8 si existe (\xEF\xBB\xBF)
-                $bom = fread($handle, 3);
-                if ($bom !== "\xEF\xBB\xBF") {
-                    rewind($handle);
+            // --- Lectura del archivo según su extensión ---
+            if ($extension === 'xlsx') {
+                // Lectura nativa OpenXML mediante ZipArchive y SimpleXML
+                $filas_datos = leer_archivo_xlsx($archivo['tmp_name'], 6);
+                if ($filas_datos === false) {
+                    $mensaje_error = 'No fue posible interpretar el archivo .xlsx. Asegúrate de que sea un archivo de Excel válido y no esté protegido por contraseña.';
                 }
-
-                // Detectamos el delimitador leyendo la primera línea (coma o punto y coma)
-                $pos_actual = ftell($handle);
-                $primera_linea = fgets($handle);
-                $cant_pto_coma = substr_count($primera_linea, ';');
-                $cant_coma = substr_count($primera_linea, ',');
-                $delimitador = ($cant_pto_coma > $cant_coma) ? ';' : ',';
-
-                // Regresamos el puntero al inicio de los datos
-                fseek($handle, $pos_actual);
-
-                // Contadores y registros de seguimiento
-                $insertados = 0;
-                $duplicados = 0;
-                $errores = 0;
-                $fila_num = 0;
-                $bitacora = [];
-                $exitosos = [];
-
-                // Hash de contraseña por defecto para los nuevos aspirantes
-                $password_default = password_hash('123456', PASSWORD_BCRYPT);
-
-                // Preparación de consultas SQL
-                $stmt_check = $pdo->prepare("SELECT id FROM usuarios WHERE carnet = ? OR correo_institucional = ? LIMIT 1");
-                $stmt_insert = $pdo->prepare("INSERT INTO usuarios (carnet, nombre_completo, telefono_fijo, telefono_movil, correo_institucional, correo_personal, password, rol) VALUES (?, ?, ?, ?, ?, ?, ?, 'estudiante')");
-                $stmt_solicitud = $pdo->prepare("INSERT INTO solicitudes (id_usuario, estado) VALUES (?, 'borrador')");
-
-                // Arreglos auxiliares para evitar duplicados en el mismo archivo
-                $carnets_lote = [];
-                $correos_lote = [];
-
-                // Procesamos el CSV fila por fila
-                while (($datos = fgetcsv($handle, 2000, $delimitador)) !== false) {
-                    $fila_num++;
-
-                    // Omitir la primera fila (encabezados de columnas)
-                    if ($fila_num === 1) {
-                        continue;
+            } else {
+                // Fallback para archivo .csv
+                $handle = fopen($archivo['tmp_name'], 'r');
+                if ($handle !== false) {
+                    // Omitir BOM de UTF-8
+                    $bom = fread($handle, 3);
+                    if ($bom !== "\xEF\xBB\xBF") {
+                        rewind($handle);
                     }
+                    // Detectar delimitador
+                    $pos = ftell($handle);
+                    $primera_linea = fgets($handle);
+                    $delimitador = (substr_count($primera_linea, ';') > substr_count($primera_linea, ',')) ? ';' : ',';
+                    fseek($handle, $pos);
 
-                    // Omitir filas totalmente vacías
-                    $fila_limpia = array_filter($datos, fn($val) => trim((string)$val) !== '');
-                    if (empty($fila_limpia)) {
-                        continue;
+                    while (($datos_linea = fgetcsv($handle, 2000, $delimitador)) !== false) {
+                        $fila_norm = [];
+                        for ($c = 0; $c < 6; $c++) {
+                            $fila_norm[$c] = trim((string)($datos_linea[$c] ?? ''));
+                        }
+                        $filas_datos[] = $fila_norm;
                     }
+                    fclose($handle);
+                } else {
+                    $mensaje_error = 'No fue posible abrir el archivo CSV para lectura.';
+                }
+            }
 
-                    // Extracción de datos respetando el orden obligatorio:
-                    // [0] Código (Carnet), [1] Nombre completo, [2] Tel. fijo, [3] Tel. móvil, [4] Correo ITCA, [5] Correo personal
-                    $carnet          = trim($datos[0] ?? '');
-                    $nombre_completo = trim($datos[1] ?? '');
-                    $tel_fijo        = trim($datos[2] ?? '');
-                    $tel_movil       = trim($datos[3] ?? '');
-                    $correo_itca     = trim($datos[4] ?? '');
-                    $correo_personal = trim($datos[5] ?? '');
+            // --- Procesamiento e inserción masiva en MySQL mediante PDO ---
+            if (empty($mensaje_error)) {
+                if (empty($filas_datos) || count($filas_datos) <= 1) {
+                    $mensaje_error = 'El archivo no contiene registros de datos para procesar (únicamente encabezados o vacío).';
+                } else {
+                    $insertados = 0;
+                    $duplicados = 0;
+                    $errores = 0;
+                    $fila_num = 0;
+                    $bitacora = [];
+                    $exitosos = [];
 
-                    // Normalizar campos opcionales a null si están vacíos
-                    $tel_fijo        = !empty($tel_fijo) ? $tel_fijo : null;
-                    $tel_movil       = !empty($tel_movil) ? $tel_movil : null;
-                    $correo_personal = !empty($correo_personal) ? $correo_personal : null;
+                    // Hash único precalculado para optimizar el rendimiento del bucle
+                    $password_default = password_hash('123456', PASSWORD_BCRYPT);
 
-                    // Validación de campos obligatorios
-                    if (empty($carnet) || empty($nombre_completo) || empty($correo_itca)) {
-                        $errores++;
-                        $bitacora[] = [
-                            'tipo'    => 'danger',
-                            'icono'   => 'bi-x-circle-fill',
-                            'fila'    => $fila_num,
-                            'carnet'  => $carnet ?: '(No especificado)',
-                            'detalle' => 'Campos obligatorios incompletos (requiere Código, Nombre completo y Correo ITCA).'
-                        ];
-                        continue;
-                    }
+                    // Consultas preparadas de alto rendimiento con PDO
+                    $stmt_check = $pdo->prepare("SELECT id FROM usuarios WHERE carnet = ? OR correo_institucional = ? LIMIT 1");
+                    $stmt_insert = $pdo->prepare("INSERT INTO usuarios (carnet, nombre_completo, telefono_fijo, telefono_movil, correo_institucional, correo_personal, password, rol) VALUES (?, ?, ?, ?, ?, ?, ?, 'estudiante')");
+                    $stmt_solicitud = $pdo->prepare("INSERT INTO solicitudes (id_usuario, estado) VALUES (?, 'borrador')");
 
-                    // Validación básica de formato de correo ITCA
-                    if (!filter_var($correo_itca, FILTER_VALIDATE_EMAIL)) {
-                        $errores++;
-                        $bitacora[] = [
-                            'tipo'    => 'danger',
-                            'icono'   => 'bi-exclamation-triangle-fill',
-                            'fila'    => $fila_num,
-                            'carnet'  => $carnet,
-                            'detalle' => "El correo institucional '$correo_itca' tiene un formato inválido."
-                        ];
-                        continue;
-                    }
+                    // Control de duplicados en el mismo archivo
+                    $carnets_en_lote = [];
+                    $correos_en_lote = [];
 
-                    // Detección de duplicados dentro del mismo archivo subido
-                    $carnet_lower = strtolower($carnet);
-                    $correo_lower = strtolower($correo_itca);
+                    // Iniciamos transacción para acelerar inserciones masivas y asegurar consistencia
+                    $pdo->beginTransaction();
 
-                    if (in_array($carnet_lower, $carnets_lote, true) || in_array($correo_lower, $correos_lote, true)) {
-                        $duplicados++;
-                        $bitacora[] = [
-                            'tipo'    => 'warning',
-                            'icono'   => 'bi-exclamation-circle-fill',
-                            'fila'    => $fila_num,
-                            'carnet'  => $carnet,
-                            'detalle' => "Registro repetido dentro del mismo archivo CSV (Carnet: $carnet)."
-                        ];
-                        continue;
-                    }
-
-                    // Verificación de duplicados en la base de datos
                     try {
-                        $stmt_check->execute([$carnet, $correo_itca]);
-                        if ($stmt_check->fetch()) {
-                            $duplicados++;
-                            $bitacora[] = [
-                                'tipo'    => 'warning',
-                                'icono'   => 'bi-person-x-fill',
-                                'fila'    => $fila_num,
-                                'carnet'  => $carnet,
-                                'detalle' => "El carnet '$carnet' o correo '$correo_itca' ya se encuentra registrado en el sistema."
+                        foreach ($filas_datos as $datos) {
+                            $fila_num++;
+
+                            // Omitir la fila 1 (encabezados de columnas)
+                            if ($fila_num === 1) {
+                                continue;
+                            }
+
+                            // Omitir filas en blanco
+                            if (empty(array_filter($datos, fn($v) => trim((string)$v) !== ''))) {
+                                continue;
+                            }
+
+                            // Mapeo ordenado de columnas:
+                            // [0] Código/Carnet, [1] Nombre completo, [2] Tel. fijo, [3] Tel. móvil, [4] Correo ITCA, [5] Correo personal
+                            $carnet          = trim($datos[0] ?? '');
+                            $nombre_completo = trim($datos[1] ?? '');
+                            $tel_fijo        = trim($datos[2] ?? '');
+                            $tel_movil       = trim($datos[3] ?? '');
+                            $correo_itca     = trim($datos[4] ?? '');
+                            $correo_personal = trim($datos[5] ?? '');
+
+                            // Normalizar campos opcionales
+                            $tel_fijo        = !empty($tel_fijo) ? $tel_fijo : null;
+                            $tel_movil       = !empty($tel_movil) ? $tel_movil : null;
+                            $correo_personal = !empty($correo_personal) ? $correo_personal : null;
+
+                            // 1. Validar obligatoriedad
+                            if (empty($carnet) || empty($nombre_completo) || empty($correo_itca)) {
+                                $errores++;
+                                $bitacora[] = [
+                                    'tipo'    => 'danger',
+                                    'icono'   => 'bi-x-circle-fill',
+                                    'fila'    => $fila_num,
+                                    'carnet'  => $carnet ?: '(No especificado)',
+                                    'detalle' => 'Faltan campos obligatorios (requiere Código, Nombre completo y Correo ITCA).'
+                                ];
+                                continue;
+                            }
+
+                            // 2. Validar formato de correo institucional
+                            if (!filter_var($correo_itca, FILTER_VALIDATE_EMAIL)) {
+                                $errores++;
+                                $bitacora[] = [
+                                    'tipo'    => 'danger',
+                                    'icono'   => 'bi-envelope-exclamation-fill',
+                                    'fila'    => $fila_num,
+                                    'carnet'  => $carnet,
+                                    'detalle' => "Formato de correo no válido: '$correo_itca'."
+                                ];
+                                continue;
+                            }
+
+                            // 3. Validar duplicidad interna dentro del archivo
+                            $c_lower = strtolower($carnet);
+                            $m_lower = strtolower($correo_itca);
+
+                            if (in_array($c_lower, $carnets_en_lote, true) || in_array($m_lower, $correos_en_lote, true)) {
+                                $duplicados++;
+                                $bitacora[] = [
+                                    'tipo'    => 'warning',
+                                    'icono'   => 'bi-copy',
+                                    'fila'    => $fila_num,
+                                    'carnet'  => $carnet,
+                                    'detalle' => "Registro duplicado dentro del mismo archivo (Carnet: $carnet)."
+                                ];
+                                continue;
+                            }
+
+                            // 4. Validar existencia previa en la base de datos MySQL
+                            $stmt_check->execute([$carnet, $correo_itca]);
+                            if ($stmt_check->fetch()) {
+                                $duplicados++;
+                                $bitacora[] = [
+                                    'tipo'    => 'warning',
+                                    'icono'   => 'bi-person-exclamation',
+                                    'fila'    => $fila_num,
+                                    'carnet'  => $carnet,
+                                    'detalle' => "El carnet '$carnet' o correo '$correo_itca' ya se encuentra registrado."
+                                ];
+                                continue;
+                            }
+
+                            // 5. Inserción masiva de usuario y creación de solicitud inicial
+                            $stmt_insert->execute([
+                                $carnet,
+                                $nombre_completo,
+                                $tel_fijo,
+                                $tel_movil,
+                                $correo_itca,
+                                $correo_personal,
+                                $password_default
+                            ]);
+                            $id_nuevo_usuario = $pdo->lastInsertId();
+
+                            $stmt_solicitud->execute([$id_nuevo_usuario]);
+
+                            $insertados++;
+                            $carnets_en_lote[] = $c_lower;
+                            $correos_en_lote[] = $m_lower;
+
+                            $exitosos[] = [
+                                'carnet' => $carnet,
+                                'nombre' => $nombre_completo,
+                                'correo' => $correo_itca,
+                                'movil'  => $tel_movil ?: 'N/D'
                             ];
-                            continue;
                         }
 
-                        // Inserción del nuevo estudiante
-                        $stmt_insert->execute([
-                            $carnet,
-                            $nombre_completo,
-                            $tel_fijo,
-                            $tel_movil,
-                            $correo_itca,
-                            $correo_personal,
-                            $password_default
-                        ]);
-                        $id_nuevo_usuario = $pdo->lastInsertId();
+                        // Confirmar todas las inserciones
+                        $pdo->commit();
 
-                        // Creación automática de solicitud inicial en estado borrador
-                        $stmt_solicitud->execute([$id_nuevo_usuario]);
-
-                        // Registrar éxito
-                        $insertados++;
-                        $carnets_lote[] = $carnet_lower;
-                        $correos_lote[] = $correo_lower;
-                        $exitosos[] = [
-                            'carnet' => $carnet,
-                            'nombre' => $nombre_completo,
-                            'correo' => $correo_itca,
-                            'movil'  => $tel_movil ?: 'N/D'
+                        $total_evaluados = $insertados + $duplicados + $errores;
+                        $mensaje_exito = "Archivo procesado e importado con éxito.";
+                        $detalles_carga = [
+                            'total'          => $total_evaluados,
+                            'insertados'     => $insertados,
+                            'duplicados'     => $duplicados,
+                            'errores'        => $errores,
+                            'bitacora'       => $bitacora,
+                            'exitosos'       => $exitosos,
+                            'nombre_archivo' => htmlspecialchars($archivo['name']),
+                            'formato'        => strtoupper($extension)
                         ];
 
-                    } catch (PDOException $e) {
-                        $errores++;
-                        $bitacora[] = [
-                            'tipo'    => 'danger',
-                            'icono'   => 'bi-database-fill-x',
-                            'fila'    => $fila_num,
-                            'carnet'  => $carnet,
-                            'detalle' => 'Error al persistir registro en la base de datos.'
-                        ];
+                    } catch (PDOException $ex) {
+                        if ($pdo->inTransaction()) {
+                            $pdo->rollBack();
+                        }
+                        $mensaje_error = 'Ocurrió un error en la base de datos durante la importación: ' . $ex->getMessage();
                     }
                 }
-
-                fclose($handle);
-
-                $total_procesados = $insertados + $duplicados + $errores;
-                $mensaje_exito = "El archivo se ha procesado exitosamente.";
-                $detalles_carga = [
-                    'total'      => $total_procesados,
-                    'insertados' => $insertados,
-                    'duplicados' => $duplicados,
-                    'errores'    => $errores,
-                    'bitacora'   => $bitacora,
-                    'exitosos'   => $exitosos,
-                    'nombre_csv' => htmlspecialchars($archivo['name'])
-                ];
             }
         }
     }
@@ -223,7 +245,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carga Masiva de Aspirantes - ITCA FEPADE</title>
+    <title>Carga Masiva de Aspirantes (.xlsx) - ITCA FEPADE</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -386,24 +408,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
             background-color: var(--itca-yellow-light) !important;
         }
 
-        /* Zona de carga y arrastre (Drag & Drop) */
-        .zona-arrastre-bs {
+        /* Zona de carga para Excel (.xlsx) */
+        .zona-arrastre-xlsx {
             border: 2px dashed var(--itca-red);
             border-radius: 12px;
             background-color: #ffffff;
-            padding: 35px 25px;
+            padding: 38px 25px;
             text-align: center;
             cursor: pointer;
             transition: all 0.25s ease-in-out;
             position: relative;
         }
-        .zona-arrastre-bs:hover, .zona-arrastre-bs.arrastrando {
+        .zona-arrastre-xlsx:hover, .zona-arrastre-xlsx.arrastrando {
             background-color: #fff9e6;
-            border-color: #d48806;
+            border-color: #198754;
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(179, 0, 0, 0.1);
+            box-shadow: 0 6px 16px rgba(25, 135, 84, 0.15);
         }
-        .zona-arrastre-bs input[type="file"] {
+        .zona-arrastre-xlsx input[type="file"] {
             position: absolute;
             top: 0;
             left: 0;
@@ -413,25 +435,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
             cursor: pointer;
             z-index: 5;
         }
-        .icono-subida {
-            font-size: 48px;
-            color: var(--itca-red);
+        .icono-excel {
+            font-size: 52px;
+            color: #198754;
             display: inline-block;
             transition: transform 0.2s ease;
         }
-        .zona-arrastre-bs:hover .icono-subida {
-            transform: scale(1.1);
-        }
-
-        /* Tarjetas de métricas */
-        .metric-card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-        .metric-card:hover {
-            transform: translateY(-2px);
+        .zona-arrastre-xlsx:hover .icono-excel {
+            transform: scale(1.12);
         }
     </style>
 </head>
@@ -450,10 +461,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
                     <div>
                         <h2 class="h4 fw-bold mb-1" style="color: var(--itca-red);">
-                            <i class="bi bi-file-earmark-arrow-up-fill me-2"></i>Carga Masiva de Aspirantes
+                            <i class="bi bi-file-earmark-excel-fill text-success me-2"></i>Carga Masiva de Aspirantes (.xlsx)
                         </h2>
                         <p class="text-secondary small mb-0">
-                            Importa rápidamente listas de aspirantes a través de archivos de valores separados por coma (.CSV).
+                            Importación directa a base de datos MySQL desde hojas de cálculo Microsoft Excel (.XLSX) con consultas preparadas PDO.
                         </p>
                     </div>
                     <nav aria-label="breadcrumb" class="mt-2 mt-md-0">
@@ -464,18 +475,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                     </nav>
                 </div>
 
-                <!-- Alerta de Notificación de Errores Globales -->
+                <!-- Notificación de Error -->
                 <?php if ($mensaje_error): ?>
                     <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 d-flex align-items-center mb-4" role="alert">
                         <i class="bi bi-exclamation-octagon-fill fs-4 me-3 text-danger"></i>
                         <div>
-                            <strong>¡Atención!</strong> <?php echo $mensaje_error; ?>
+                            <strong>Error en la importación:</strong> <?php echo $mensaje_error; ?>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
                     </div>
                 <?php endif; ?>
 
-                <!-- Alerta y Resumen del Procesamiento Exitoso -->
+                <!-- Resumen de Procesamiento Masivo Exitoso -->
                 <?php if ($mensaje_exito && $detalles_carga): ?>
                     <div class="card border-0 shadow-sm mb-4" style="border-left: 5px solid #198754 !important;">
                         <div class="card-body p-4">
@@ -486,15 +497,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                                     </div>
                                     <div>
                                         <h5 class="card-title fw-bold text-success mb-1"><?php echo $mensaje_exito; ?></h5>
-                                        <p class="text-muted small mb-0">Archivo procesado: <strong><?php echo $detalles_carga['nombre_csv']; ?></strong></p>
+                                        <p class="text-muted small mb-0">
+                                            Archivo: <strong><?php echo $detalles_carga['nombre_archivo']; ?></strong>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle ms-2">Formato <?php echo $detalles_carga['formato']; ?></span>
+                                        </p>
                                     </div>
                                 </div>
                                 <span class="badge bg-success bg-opacity-25 text-success px-3 py-2 rounded-pill fw-semibold">
-                                    <i class="bi bi-clock-history me-1"></i> Finalizado
+                                    <i class="bi bi-database-check me-1"></i> Transacción MySQL Completada
                                 </span>
                             </div>
 
-                            <!-- Métricas Rápidas en Cuadrícula -->
+                            <!-- Métricas de Carga Masiva -->
                             <div class="row g-3 my-2">
                                 <div class="col-6 col-md-3">
                                     <div class="p-3 bg-light rounded-3 text-center border">
@@ -504,13 +518,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <div class="p-3 bg-success bg-opacity-10 rounded-3 text-center border border-success-subtle">
-                                        <div class="text-success small fw-semibold text-uppercase">Insertados</div>
+                                        <div class="text-success small fw-semibold text-uppercase">Insertados en BD</div>
                                         <div class="fs-3 fw-bold text-success"><?php echo $detalles_carga['insertados']; ?></div>
                                     </div>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <div class="p-3 bg-warning bg-opacity-10 rounded-3 text-center border border-warning-subtle">
-                                        <div class="text-warning-emphasis small fw-semibold text-uppercase">Duplicados</div>
+                                        <div class="text-warning-emphasis small fw-semibold text-uppercase">Duplicados Omitidos</div>
                                         <div class="fs-3 fw-bold text-warning-emphasis"><?php echo $detalles_carga['duplicados']; ?></div>
                                     </div>
                                 </div>
@@ -522,18 +536,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                                 </div>
                             </div>
 
-                            <!-- Bitácora de Observaciones si las hay -->
+                            <!-- Bitácora de Observaciones -->
                             <?php if (!empty($detalles_carga['bitacora'])): ?>
                                 <div class="mt-4">
                                     <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBitacora" aria-expanded="false">
-                                        <i class="bi bi-journal-text"></i> Ver detalles de advertencias y omisiones (<?php echo count($detalles_carga['bitacora']); ?>)
+                                        <i class="bi bi-journal-text"></i> Ver bitácora de omisiones y advertencias (<?php echo count($detalles_carga['bitacora']); ?>)
                                     </button>
                                     <div class="collapse mt-2" id="collapseBitacora">
-                                        <div class="table-responsive border rounded-3 bg-white" style="max-height: 240px; overflow-y: auto;">
+                                        <div class="table-responsive border rounded-3 bg-white" style="max-height: 250px; overflow-y: auto;">
                                             <table class="table table-sm table-hover align-middle mb-0 small">
                                                 <thead class="table-light sticky-top">
                                                     <tr>
-                                                        <th class="py-2 ps-3">Fila</th>
+                                                        <th class="py-2 ps-3">Fila Excel</th>
                                                         <th class="py-2">Código</th>
                                                         <th class="py-2">Detalle de la Observación</th>
                                                     </tr>
@@ -541,7 +555,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                                                 <tbody>
                                                     <?php foreach ($detalles_carga['bitacora'] as $item): ?>
                                                         <tr>
-                                                            <td class="ps-3"><span class="badge bg-secondary"><?php echo $item['fila']; ?></span></td>
+                                                            <td class="ps-3"><span class="badge bg-secondary">Fila <?php echo $item['fila']; ?></span></td>
                                                             <td class="font-monospace fw-semibold"><?php echo htmlspecialchars($item['carnet']); ?></td>
                                                             <td>
                                                                 <i class="bi <?php echo $item['icono']; ?> text-<?php echo $item['tipo']; ?> me-1"></i>
@@ -556,20 +570,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Listado de Estudiantes Insertados con Éxito -->
+                            <!-- Listado de Registros Guardados -->
                             <?php if (!empty($detalles_carga['exitosos'])): ?>
                                 <div class="mt-3">
                                     <button class="btn btn-sm btn-outline-success d-flex align-items-center gap-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExitosos" aria-expanded="false">
-                                        <i class="bi bi-people-fill"></i> Ver estudiantes incorporados (<?php echo count($detalles_carga['exitosos']); ?>)
+                                        <i class="bi bi-people-fill"></i> Ver estudiantes incorporados exitosamente (<?php echo count($detalles_carga['exitosos']); ?>)
                                     </button>
                                     <div class="collapse mt-2" id="collapseExitosos">
-                                        <div class="table-responsive border rounded-3 bg-white" style="max-height: 240px; overflow-y: auto;">
+                                        <div class="table-responsive border rounded-3 bg-white" style="max-height: 250px; overflow-y: auto;">
                                             <table class="table table-sm table-hover align-middle mb-0 small">
                                                 <thead class="table-light sticky-top">
                                                     <tr>
-                                                        <th class="py-2 ps-3">Carnet / Código</th>
+                                                        <th class="py-2 ps-3">Carnet</th>
                                                         <th class="py-2">Nombre Completo</th>
                                                         <th class="py-2">Correo ITCA</th>
+                                                        <th class="py-2">Teléfono Móvil</th>
                                                         <th class="py-2 text-center">Estado Inicial</th>
                                                     </tr>
                                                 </thead>
@@ -577,8 +592,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                                                     <?php foreach ($detalles_carga['exitosos'] as $ex): ?>
                                                         <tr>
                                                             <td class="ps-3 font-monospace fw-bold text-danger"><?php echo htmlspecialchars($ex['carnet']); ?></td>
-                                                            <td><?php echo htmlspecialchars($ex['nombre']); ?></td>
+                                                            <td class="fw-medium"><?php echo htmlspecialchars($ex['nombre']); ?></td>
                                                             <td class="text-secondary"><?php echo htmlspecialchars($ex['correo']); ?></td>
+                                                            <td class="text-secondary"><?php echo htmlspecialchars($ex['movil']); ?></td>
                                                             <td class="text-center">
                                                                 <span class="badge bg-secondary-subtle text-secondary border">Borrador</span>
                                                             </td>
@@ -595,7 +611,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                 <?php endif; ?>
 
                 <!-- ========================================================
-                     1. TABLA DE REFERENCIA SUPERIOR (Formato Obligatorio)
+                     1. TABLA DE REFERENCIA SUPERIOR (Formato de Columnas)
                      ======================================================== -->
                 <div class="card tabla-referencia-card mb-4">
                     <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -605,12 +621,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                             </span>
                             <div>
                                 <h5 class="card-title mb-0 fw-bold text-dark">Formato de Columnas Obligatorio</h5>
-                                <small class="text-muted">El archivo CSV debe cumplir con la siguiente estructura y encabezados exactos:</small>
+                                <small class="text-muted">El archivo Excel (.xlsx) debe estructurarse obligatoriamente con el siguiente encabezado y orden:</small>
                             </div>
                         </div>
-                        <div>
-                            <a href="descargar_plantilla.php" class="btn btn-outline-itca btn-sm shadow-sm d-inline-flex align-items-center gap-2">
-                                <i class="bi bi-download"></i>
+                        <div class="d-flex gap-2">
+                            <a href="descargar_plantilla.php?formato=xlsx" class="btn btn-outline-success btn-sm shadow-sm d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-file-earmark-excel"></i>
+                                <span>Descargar Plantilla (.xlsx)</span>
+                            </a>
+                            <a href="descargar_plantilla.php?formato=csv" class="btn btn-outline-secondary btn-sm shadow-sm d-inline-flex align-items-center gap-1">
+                                <i class="bi bi-filetype-csv"></i>
                                 <span>Descargar Plantilla (.csv)</span>
                             </a>
                         </div>
@@ -693,60 +713,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small text-secondary">
                             <div>
                                 <i class="bi bi-info-circle-fill text-danger me-1"></i>
-                                <span>La <strong>primera fila</strong> del archivo corresponde a los títulos de las columnas. Se admiten delimitadores por <strong>coma (,)</strong> o <strong>punto y coma (;)</strong>.</span>
+                                <span>La <strong>primera fila</strong> de la hoja de cálculo corresponde al encabezado de las columnas. Las filas siguientes representan los registros individuales.</span>
                             </div>
                             <div>
-                                <span class="badge bg-white text-dark border">Codificación recomendada: UTF-8</span>
+                                <span class="badge bg-white text-success border border-success-subtle">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Compatibilidad nativa con Excel (.xlsx)
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- ========================================================
-                     2. ZONA DE CARGA DEL ARCHIVO (Drag & Drop + Formulario)
+                     2. FORMULARIO CON INPUT FILE PARA ARCHIVOS .XLSX
                      ======================================================== -->
                 <div class="row g-4">
                     <div class="col-lg-8">
                         <div class="card border-0 shadow-sm rounded-3">
                             <div class="card-header bg-white py-3 border-bottom">
                                 <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center">
-                                    <i class="bi bi-cloud-arrow-up-fill me-2" style="color: var(--itca-red);"></i>
-                                    Subir Archivo de Aspirantes (.CSV)
+                                    <i class="bi bi-file-earmark-arrow-up-fill text-success me-2 fs-5"></i>
+                                    Adjuntar y Cargar Archivo (.xlsx)
                                 </h5>
                             </div>
                             <div class="card-body p-4">
                                 <form method="POST" action="" enctype="multipart/form-data" id="formCargaMasiva">
-                                    <div class="zona-arrastre-bs mb-3" id="dropZone">
+                                    <div class="zona-arrastre-xlsx mb-3" id="dropZone">
                                         <div class="mb-3">
-                                            <i class="bi bi-file-earmark-spreadsheet icono-subida"></i>
+                                            <i class="bi bi-file-earmark-excel-fill icono-excel"></i>
                                         </div>
                                         <h6 class="fw-bold text-dark mb-1">
-                                            Arrastra y suelta tu archivo .csv aquí
+                                            Arrastra y suelta tu archivo Excel (.xlsx) aquí
                                         </h6>
                                         <p class="text-muted small mb-3">
-                                            o haz clic para explorar los archivos de tu computadora
+                                            o haz clic sobre esta zona para examinar en tu dispositivo
                                         </p>
                                         
-                                        <!-- Caja con el nombre del archivo seleccionado -->
+                                        <!-- Previsualización del archivo seleccionado -->
                                         <div id="infoArchivo" class="d-none">
-                                            <div class="d-inline-flex align-items-center bg-white border border-danger-subtle px-3 py-2 rounded-pill shadow-sm">
-                                                <i class="bi bi-filetype-csv text-danger fs-5 me-2"></i>
+                                            <div class="d-inline-flex align-items-center bg-white border border-success-subtle px-3 py-2 rounded-pill shadow-sm">
+                                                <i class="bi bi-file-earmark-spreadsheet-fill text-success fs-5 me-2"></i>
                                                 <span id="nombreArchivo" class="fw-semibold small text-dark me-2 text-truncate" style="max-width: 260px;"></span>
-                                                <span id="tamanoArchivo" class="badge bg-secondary me-2"></span>
+                                                <span id="tamanoArchivo" class="badge bg-success me-2"></span>
                                                 <button type="button" class="btn-close btn-sm" id="btnQuitarArchivo" aria-label="Quitar archivo"></button>
                                             </div>
                                         </div>
 
-                                        <input type="file" name="archivo_csv" id="archivo_csv" accept=".csv,text/csv" required>
+                                        <!-- Input tipo file obligatorio para archivos .xlsx -->
+                                        <input type="file" 
+                                               name="archivo_excel" 
+                                               id="archivo_excel" 
+                                               accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, .csv" 
+                                               required>
                                     </div>
 
                                     <div class="d-flex justify-content-between align-items-center pt-2">
                                         <span class="text-muted small">
-                                            <i class="bi bi-shield-check me-1 text-success"></i>Archivos procesados de manera segura.
+                                            <i class="bi bi-database-lock me-1 text-success"></i>Inserción protegida con transacciones PDO.
                                         </span>
                                         <button type="submit" class="btn btn-itca px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2" id="btnSubmit">
                                             <i class="bi bi-upload"></i>
-                                            <span id="btnSubmitTexto">Procesar e Importar</span>
+                                            <span id="btnSubmitTexto">Procesar e Insertar en Base de Datos</span>
                                         </button>
                                     </div>
                                 </form>
@@ -754,75 +781,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                         </div>
                     </div>
 
-                    <!-- Panel Lateral Informativo -->
+                    <!-- Panel Informativo Lateral -->
                     <div class="col-lg-4">
                         <div class="card border-0 shadow-sm rounded-3 mb-3">
                             <div class="card-header bg-white py-3 border-bottom">
                                 <h6 class="card-title mb-0 fw-bold text-dark d-flex align-items-center">
-                                    <i class="bi bi-lightbulb-fill text-warning me-2"></i>
-                                    Reglas del Proceso
+                                    <i class="bi bi-gear-wide-connected text-danger me-2"></i>
+                                    Parámetros de Importación
                                 </h6>
                             </div>
                             <div class="card-body p-3">
                                 <ul class="list-unstyled mb-0 small">
                                     <li class="d-flex align-items-start mb-3">
+                                        <i class="bi bi-shield-check text-success me-2 fs-6"></i>
+                                        <div>
+                                            <strong>Consultas Preparadas (PDO):</strong>
+                                            <p class="text-muted mb-0">Prevención total de inyección SQL y manejo transaccional en lote.</p>
+                                        </div>
+                                    </li>
+                                    <li class="d-flex align-items-start mb-3">
                                         <i class="bi bi-key-fill text-danger me-2 fs-6"></i>
                                         <div>
-                                            <strong>Contraseña Asignada:</strong>
-                                            <p class="text-muted mb-0">Cada usuario registrado recibirá por defecto la clave <code>123456</code>, la cual podrá actualizar al iniciar sesión.</p>
+                                            <strong>Credencial Inicial:</strong>
+                                            <p class="text-muted mb-0">Contraseña asignada por defecto <code>123456</code> (cifrada con BCRYPT).</p>
                                         </div>
                                     </li>
                                     <li class="d-flex align-items-start mb-3">
                                         <i class="bi bi-file-earmark-text-fill text-primary me-2 fs-6"></i>
                                         <div>
-                                            <strong>Expediente de Beca:</strong>
-                                            <p class="text-muted mb-0">El sistema creará inmediatamente una solicitud vinculada en estado <span class="badge bg-secondary-subtle text-dark border">Borrador</span>.</p>
-                                        </div>
-                                    </li>
-                                    <li class="d-flex align-items-start mb-3">
-                                        <i class="bi bi-shield-lock-fill text-success me-2 fs-6"></i>
-                                        <div>
-                                            <strong>Protección contra Duplicados:</strong>
-                                            <p class="text-muted mb-0">Si el carnet o el correo institucional ya existen, la fila se omite para evitar inconsistencias.</p>
+                                            <strong>Expediente Asociado:</strong>
+                                            <p class="text-muted mb-0">Se crea de inmediato una solicitud en estado <span class="badge bg-secondary-subtle text-dark border">Borrador</span>.</p>
                                         </div>
                                     </li>
                                     <li class="d-flex align-items-start">
-                                        <i class="bi bi-person-badge-fill text-info me-2 fs-6"></i>
+                                        <i class="bi bi-person-fill-check text-info me-2 fs-6"></i>
                                         <div>
-                                            <strong>Rol de Usuario:</strong>
-                                            <p class="text-muted mb-0">Todos los aspirantes importados recibirán el rol exclusivo de <strong>estudiante</strong>.</p>
+                                            <strong>Rol Asignado:</strong>
+                                            <p class="text-muted mb-0">Todos los aspirantes se crean con el rol <strong>estudiante</strong>.</p>
                                         </div>
                                     </li>
                                 </ul>
                             </div>
                         </div>
 
-                        <!-- Acceso Directo de Ayuda -->
+                        <!-- Tarjeta de Plantilla Rápida -->
                         <div class="p-3 bg-white rounded-3 border shadow-sm">
                             <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="bi bi-question-circle-fill text-secondary fs-5"></i>
-                                <span class="fw-bold small text-dark">¿Necesitas ayuda con el formato?</span>
+                                <i class="bi bi-file-earmark-arrow-down-fill text-success fs-5"></i>
+                                <span class="fw-bold small text-dark">Plantilla Oficial (.xlsx)</span>
                             </div>
                             <p class="text-muted small mb-2">
-                                Puedes descargar la plantilla oficial con datos pre-rellenados para asegurar la compatibilidad total.
+                                Utiliza el archivo prediseñado para evitar inconsistencias con nombres de columnas.
                             </p>
-                            <a href="descargar_plantilla.php" class="btn btn-sm btn-outline-danger w-100">
-                                <i class="bi bi-file-earmark-arrow-down me-1"></i> Obtener Plantilla Ejemplo
+                            <a href="descargar_plantilla.php?formato=xlsx" class="btn btn-sm btn-outline-success w-100 mb-1">
+                                <i class="bi bi-download me-1"></i> Descargar Plantilla Excel (.xlsx)
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Inclusión de Scripts antes del cierre de body -->
-            <!-- Bootstrap 5 Bundle JS (incluye Popper) -->
+            <!-- Inclusión de Bootstrap JS -->
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-            <!-- Interacciones de la interfaz y Zona de Arrastre -->
+            <!-- Manejo interactivo de archivo y arrastre -->
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
                     const dropZone = document.getElementById('dropZone');
-                    const fileInput = document.getElementById('archivo_csv');
+                    const fileInput = document.getElementById('archivo_excel');
                     const infoArchivo = document.getElementById('infoArchivo');
                     const nombreArchivo = document.getElementById('nombreArchivo');
                     const tamanoArchivo = document.getElementById('tamanoArchivo');
@@ -831,7 +857,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                     const btnSubmit = document.getElementById('btnSubmit');
                     const btnSubmitTexto = document.getElementById('btnSubmitTexto');
 
-                    // Función para formatear bytes a KB o MB
                     function formatearTamano(bytes) {
                         if (bytes === 0) return '0 Bytes';
                         const k = 1024;
@@ -840,12 +865,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
                     }
 
-                    // Manejo visual al seleccionar archivo
-                    function actualizarVistaArchivo(file) {
+                    function actualizarVista(file) {
                         if (file) {
                             const extension = file.name.split('.').pop().toLowerCase();
-                            if (extension !== 'csv') {
-                                alert('Por favor, selecciona un archivo válido con extensión .csv');
+                            if (extension !== 'xlsx' && extension !== 'csv') {
+                                alert('Por favor, selecciona un archivo válido con formato .xlsx o .csv');
                                 fileInput.value = '';
                                 infoArchivo.classList.add('d-none');
                                 return;
@@ -862,21 +886,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
 
                     fileInput.addEventListener('change', function() {
                         if (this.files && this.files[0]) {
-                            actualizarVistaArchivo(this.files[0]);
+                            actualizarVista(this.files[0]);
                         } else {
-                            actualizarVistaArchivo(null);
+                            actualizarVista(null);
                         }
                     });
 
-                    // Botón para quitar el archivo seleccionado
                     btnQuitar.addEventListener('click', function(e) {
                         e.stopPropagation();
                         e.preventDefault();
                         fileInput.value = '';
-                        actualizarVistaArchivo(null);
+                        actualizarVista(null);
                     });
 
-                    // Eventos de arrastre (Drag & Drop)
+                    // Eventos de arrastre
                     ['dragenter', 'dragover'].forEach(eventName => {
                         dropZone.addEventListener(eventName, function(e) {
                             e.preventDefault();
@@ -898,14 +921,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
                         const files = dt.files;
                         if (files && files.length > 0) {
                             fileInput.files = files;
-                            actualizarVistaArchivo(files[0]);
+                            actualizarVista(files[0]);
                         }
                     }, false);
 
-                    // Indicador de carga al enviar el formulario
+                    // Indicador de carga
                     formCarga.addEventListener('submit', function() {
                         btnSubmit.disabled = true;
-                        btnSubmitTexto.textContent = 'Procesando archivo...';
+                        btnSubmitTexto.textContent = 'Procesando inserción masiva...';
                         btnSubmit.insertAdjacentHTML('afterbegin', '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
                     });
                 });

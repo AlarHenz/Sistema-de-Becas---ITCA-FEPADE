@@ -1,23 +1,22 @@
 <?php
 /**
  * public/admin/carga_masiva.php
- * Carga masiva de aspirantes desde archivo Excel (.xlsx) y CSV.
- * Procesamiento nativo OpenXML con inserción masiva mediante PDO en MySQL.
+ * Carga masiva de aspirantes desde archivo CSV.
+ * Inserción masiva mediante PDO en MySQL.
  * Interfaz con Bootstrap 5 respetando la identidad institucional ITCA FEPADE.
  */
 require_once '../../includes/auth.php';
 verificar_rol('administrador');
 
 require_once '../../config/database.php';
-require_once '../../includes/xlsx_reader.php';
 
 $mensaje_exito = '';
 $mensaje_error = '';
 $detalles_carga = null;
 
-// --- 1. Procesar el archivo subido (.xlsx o .csv) ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) || isset($_FILES['archivo_xlsx']) || isset($_FILES['archivo_csv']))) {
-    $archivo = $_FILES['archivo_excel'] ?? ($_FILES['archivo_xlsx'] ?? $_FILES['archivo_csv']);
+// --- 1. Procesar el archivo CSV subido ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo_csv'])) {
+    $archivo = $_FILES['archivo_csv'];
 
     if ($archivo['error'] !== UPLOAD_ERR_OK) {
         switch ($archivo['error']) {
@@ -26,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
                 $mensaje_error = 'El archivo supera el tamaño máximo permitido por el servidor.';
                 break;
             case UPLOAD_ERR_NO_FILE:
-                $mensaje_error = 'Por favor, selecciona un archivo Excel (.xlsx) para cargar.';
+                $mensaje_error = 'Por favor, selecciona un archivo CSV para cargar.';
                 break;
             default:
                 $mensaje_error = 'Ocurrió un error al subir el archivo (Código de error: ' . $archivo['error'] . ').';
@@ -36,43 +35,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
         $extension = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
         $filas_datos = [];
 
-        // Validar formato admitido
-        if (!in_array($extension, ['xlsx', 'csv'], true)) {
-            $mensaje_error = 'Formato no compatible. Por favor sube un archivo con formato <strong>.xlsx</strong> (Microsoft Excel) o <strong>.csv</strong>.';
+        if ($extension !== 'csv') {
+            $mensaje_error = 'Formato no compatible. Por favor sube un archivo con formato <strong>.csv</strong>.';
         } else {
-            // --- Lectura del archivo según su extensión ---
-            if ($extension === 'xlsx') {
-                // Lectura nativa OpenXML mediante ZipArchive y SimpleXML
-                $filas_datos = leer_archivo_xlsx($archivo['tmp_name'], 6);
-                if ($filas_datos === false) {
-                    $mensaje_error = 'No fue posible interpretar el archivo .xlsx. Asegúrate de que sea un archivo de Excel válido y no esté protegido por contraseña.';
+            $handle = fopen($archivo['tmp_name'], 'r');
+            if ($handle !== false) {
+                // Omitir BOM de UTF-8
+                $bom = fread($handle, 3);
+                if ($bom !== "\xEF\xBB\xBF") {
+                    rewind($handle);
                 }
-            } else {
-                // Fallback para archivo .csv
-                $handle = fopen($archivo['tmp_name'], 'r');
-                if ($handle !== false) {
-                    // Omitir BOM de UTF-8
-                    $bom = fread($handle, 3);
-                    if ($bom !== "\xEF\xBB\xBF") {
-                        rewind($handle);
-                    }
-                    // Detectar delimitador
-                    $pos = ftell($handle);
-                    $primera_linea = fgets($handle);
-                    $delimitador = (substr_count($primera_linea, ';') > substr_count($primera_linea, ',')) ? ';' : ',';
-                    fseek($handle, $pos);
+                // Detectar delimitador
+                $pos = ftell($handle);
+                $primera_linea = fgets($handle);
+                $delimitador = (substr_count($primera_linea, ';') > substr_count($primera_linea, ',')) ? ';' : ',';
+                fseek($handle, $pos);
 
-                    while (($datos_linea = fgetcsv($handle, 2000, $delimitador)) !== false) {
-                        $fila_norm = [];
-                        for ($c = 0; $c < 6; $c++) {
-                            $fila_norm[$c] = trim((string)($datos_linea[$c] ?? ''));
-                        }
-                        $filas_datos[] = $fila_norm;
+                while (($datos_linea = fgetcsv($handle, 2000, $delimitador)) !== false) {
+                    $fila_norm = [];
+                    for ($c = 0; $c < 6; $c++) {
+                        $fila_norm[$c] = trim((string)($datos_linea[$c] ?? ''));
                     }
-                    fclose($handle);
-                } else {
-                    $mensaje_error = 'No fue posible abrir el archivo CSV para lectura.';
+                    $filas_datos[] = $fila_norm;
                 }
+                fclose($handle);
+            } else {
+                $mensaje_error = 'No fue posible abrir el archivo CSV para lectura.';
             }
 
             // --- Procesamiento e inserción masiva en MySQL mediante PDO ---
@@ -245,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carga Masiva de Aspirantes (.xlsx) - ITCA FEPADE</title>
+    <title>Carga Masiva de Aspirantes (.csv) - ITCA FEPADE</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -322,8 +310,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
             background-color: #fbfbfb !important;
         }
 
-        /* Zona de carga para Excel (.xlsx) */
-        .zona-arrastre-xlsx {
+        /* Zona de carga para archivos CSV */
+        .zona-arrastre-csv {
             border: 2px dashed var(--itca-red);
             border-radius: 8px;
             background-color: #ffffff;
@@ -333,13 +321,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
             transition: all 0.25s ease-in-out;
             position: relative;
         }
-        .zona-arrastre-xlsx:hover, .zona-arrastre-xlsx.arrastrando {
+        .zona-arrastre-csv:hover, .zona-arrastre-csv.arrastrando {
             background-color: #fff9e6;
             border-color: var(--itca-red-dark);
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(178, 42, 20, 0.12);
         }
-        .zona-arrastre-xlsx input[type="file"] {
+        .zona-arrastre-csv input[type="file"] {
             position: absolute;
             top: 0;
             left: 0;
@@ -349,13 +337,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
             cursor: pointer;
             z-index: 5;
         }
-        .icono-excel {
+        .icono-csv {
             font-size: 52px;
             color: var(--itca-red);
             display: inline-block;
             transition: transform 0.2s ease;
         }
-        .zona-arrastre-xlsx:hover .icono-excel {
+        .zona-arrastre-csv:hover .icono-csv {
             transform: scale(1.12);
         }
     </style>
@@ -376,10 +364,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
                     <div>
                         <h2 class="h4 fw-bold mb-1" style="color: var(--itca-red);">
-                            <i class="bi bi-file-earmark-excel-fill text-success me-2"></i>Carga Masiva de Aspirantes (.xlsx)
+                            <i class="bi bi-filetype-csv text-success me-2"></i>Carga Masiva de Aspirantes (.csv)
                         </h2>
                         <p class="text-secondary small mb-0">
-                            Importación directa a base de datos MySQL desde hojas de cálculo Microsoft Excel (.XLSX) con consultas preparadas PDO.
+                            Importación directa a la base de datos MySQL desde archivos CSV con consultas preparadas PDO.
                         </p>
                     </div>
                     <nav aria-label="breadcrumb" class="mt-2 mt-md-0">
@@ -462,7 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
                                             <table class="table table-sm table-hover align-middle mb-0 small">
                                                 <thead class="table-light sticky-top">
                                                     <tr>
-                                                        <th class="py-2 ps-3">Fila Excel</th>
+                                                        <th class="py-2 ps-3">Fila CSV</th>
                                                         <th class="py-2">Código</th>
                                                         <th class="py-2">Detalle de la Observación</th>
                                                     </tr>
@@ -536,15 +524,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
                             </span>
                             <div>
                                 <h5 class="card-title mb-0 fw-bold text-dark">Formato de Columnas Obligatorio</h5>
-                                <small class="text-muted">El archivo Excel (.xlsx) debe estructurarse obligatoriamente con el siguiente encabezado y orden:</small>
+                                <small class="text-muted">El archivo CSV debe estructurarse obligatoriamente con el siguiente encabezado y orden:</small>
                             </div>
                         </div>
                         <div class="d-flex gap-2">
-                            <a href="descargar_plantilla.php?formato=xlsx" class="btn btn-outline-success btn-sm shadow-sm d-inline-flex align-items-center gap-1">
-                                <i class="bi bi-file-earmark-excel"></i>
-                                <span>Descargar Plantilla (.xlsx)</span>
-                            </a>
-                            <a href="descargar_plantilla.php?formato=csv" class="btn btn-outline-secondary btn-sm shadow-sm d-inline-flex align-items-center gap-1">
+                            <a href="descargar_plantilla.php" class="btn btn-outline-secondary btn-sm shadow-sm d-inline-flex align-items-center gap-1">
                                 <i class="bi bi-filetype-csv"></i>
                                 <span>Descargar Plantilla (.csv)</span>
                             </a>
@@ -628,11 +612,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small text-secondary">
                             <div>
                                 <i class="bi bi-info-circle-fill text-danger me-1"></i>
-                                <span>La <strong>primera fila</strong> de la hoja de cálculo corresponde al encabezado de las columnas. Las filas siguientes representan los registros individuales.</span>
+                                <span>La <strong>primera fila</strong> del archivo CSV corresponde al encabezado de las columnas. Las filas siguientes representan los registros individuales.</span>
                             </div>
                             <div>
                                 <span class="badge bg-white text-success border border-success-subtle">
-                                    <i class="bi bi-check-circle-fill me-1"></i>Compatibilidad nativa con Excel (.xlsx)
+                                    <i class="bi bi-check-circle-fill me-1"></i>Formato compatible: CSV
                                 </span>
                             </div>
                         </div>
@@ -640,25 +624,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
                 </div>
 
                 <!-- ========================================================
-                     2. FORMULARIO CON INPUT FILE PARA ARCHIVOS .XLSX
+                     2. FORMULARIO PARA ARCHIVOS CSV
                      ======================================================== -->
                 <div class="row g-4">
                     <div class="col-lg-8">
                         <div class="card border-0 shadow-sm rounded-3">
                             <div class="card-header bg-white py-3 border-bottom">
                                 <h5 class="card-title mb-0 fw-bold text-dark d-flex align-items-center">
-                                    <i class="bi bi-file-earmark-arrow-up-fill text-success me-2 fs-5"></i>
-                                    Adjuntar y Cargar Archivo (.xlsx)
+                                    <i class="bi bi-filetype-csv text-success me-2 fs-5"></i>
+                                    Adjuntar y Cargar Archivo (.csv)
                                 </h5>
                             </div>
                             <div class="card-body p-4">
                                 <form method="POST" action="" enctype="multipart/form-data" id="formCargaMasiva">
-                                    <div class="zona-arrastre-xlsx mb-3" id="dropZone">
+                                    <div class="zona-arrastre-csv mb-3" id="dropZone">
                                         <div class="mb-3">
-                                            <i class="bi bi-file-earmark-excel-fill icono-excel"></i>
+                                            <i class="bi bi-filetype-csv icono-csv"></i>
                                         </div>
                                         <h6 class="fw-bold text-dark mb-1">
-                                            Arrastra y suelta tu archivo Excel (.xlsx) aquí
+                                            Arrastra y suelta tu archivo CSV (.csv) aquí
                                         </h6>
                                         <p class="text-muted small mb-3">
                                             o haz clic sobre esta zona para examinar en tu dispositivo
@@ -674,11 +658,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
                                             </div>
                                         </div>
 
-                                        <!-- Input tipo file obligatorio para archivos .xlsx -->
                                         <input type="file" 
-                                               name="archivo_excel" 
-                                               id="archivo_excel" 
-                                               accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, .csv" 
+                                               name="archivo_csv"
+                                               id="archivo_csv"
+                                               accept=".csv, text/csv"
                                                required>
                                     </div>
 
@@ -743,13 +726,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
                         <div class="p-3 bg-white rounded-3 border shadow-sm">
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <i class="bi bi-file-earmark-arrow-down-fill text-success fs-5"></i>
-                                <span class="fw-bold small text-dark">Plantilla Oficial (.xlsx)</span>
+                                <span class="fw-bold small text-dark">Plantilla Oficial (.csv)</span>
                             </div>
                             <p class="text-muted small mb-2">
                                 Utiliza el archivo prediseñado para evitar inconsistencias con nombres de columnas.
                             </p>
-                            <a href="descargar_plantilla.php?formato=xlsx" class="btn btn-sm btn-outline-success w-100 mb-1">
-                                <i class="bi bi-download me-1"></i> Descargar Plantilla Excel (.xlsx)
+                            <a href="descargar_plantilla.php" class="btn btn-sm btn-outline-success w-100 mb-1">
+                                <i class="bi bi-download me-1"></i> Descargar Plantilla (.csv)
                             </a>
                         </div>
                     </div>
@@ -763,7 +746,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
                     const dropZone = document.getElementById('dropZone');
-                    const fileInput = document.getElementById('archivo_excel');
+                    const fileInput = document.getElementById('archivo_csv');
                     const infoArchivo = document.getElementById('infoArchivo');
                     const nombreArchivo = document.getElementById('nombreArchivo');
                     const tamanoArchivo = document.getElementById('tamanoArchivo');
@@ -783,8 +766,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
                     function actualizarVista(file) {
                         if (file) {
                             const extension = file.name.split('.').pop().toLowerCase();
-                            if (extension !== 'xlsx' && extension !== 'csv') {
-                                alert('Por favor, selecciona un archivo válido con formato .xlsx o .csv');
+                            if (extension !== 'csv') {
+                                alert('Por favor, selecciona un archivo válido con formato .csv');
                                 fileInput.value = '';
                                 infoArchivo.classList.add('d-none');
                                 return;

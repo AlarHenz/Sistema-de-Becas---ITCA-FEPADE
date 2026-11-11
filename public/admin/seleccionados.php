@@ -73,8 +73,6 @@ $total_seleccionados = count($seleccionados);
                                             </span>
                                         </td>
                                         <td>
-                                            <!-- Botones de acción simulados (para la HU-05) -->
-                                            <button onclick="alert('Funcionalidad de ver detalles en desarrollo.')" class="btn btn-secundario" style="padding: 4px 8px; font-size: 11px;">Ver</button>
                                             <a href="solicitudes.php" class="btn btn-primario" style="padding: 4px 8px; font-size: 11px;">Gestionar</a>
                                         </td>
                                     </tr>

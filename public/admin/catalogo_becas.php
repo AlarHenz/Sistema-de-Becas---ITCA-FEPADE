@@ -82,15 +82,31 @@ $becas = $pdo->query("SELECT * FROM becas ORDER BY id DESC")->fetchAll();
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Catálogo de Becas - Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Becas - ITCA FEPADE</title>
     <link rel="stylesheet" href="/Sistema-de-Becas---ITCA-FEPADE/public/css/style.css">
     <style>
         .panel-edicion-beca {
-            background-color: #fffbe6;
-            padding: 10px;
-            border: 1px solid #FFCC00;
+            background-color: #f9fafb;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            margin-top: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .panel-edicion-beca input, .panel-edicion-beca textarea {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 7px 10px;
+            font-size: 12.5px;
+            border: 1px solid #d1d5db;
             border-radius: 4px;
-            margin-top: 5px;
+            background-color: #ffffff;
+            color: #374151;
+            outline: none;
+        }
+        .panel-edicion-beca input:focus, .panel-edicion-beca textarea:focus {
+            border-color: #b22a14;
         }
     </style>
 </head>
@@ -102,7 +118,7 @@ $becas = $pdo->query("SELECT * FROM becas ORDER BY id DESC")->fetchAll();
             <?php include '../../includes/header.php'; ?>
             
             <div class="contenido">
-                <h1>Catálogo de Becas</h1>
+                <h1 class="page-title">Catálogo de Becas</h1>
                 <p class="subtitulo">Administra los tipos de beca disponibles en el sistema.</p>
 
                 <?php if ($mensaje_exito): ?>
@@ -113,8 +129,8 @@ $becas = $pdo->query("SELECT * FROM becas ORDER BY id DESC")->fetchAll();
                 <?php endif; ?>
 
                 <!-- Formulario para agregar nueva beca -->
-                <div class="tarjeta" style="margin-bottom: 20px; border-top-color: #FFCC00;">
-                    <h3 style="color: #B30000; margin-bottom: 10px;">Agregar Nueva Beca</h3>
+                <div class="tarjeta" style="margin-bottom: 24px;">
+                    <h3 style="color: var(--itca-red); font-size: 15px; font-weight: 700; margin-bottom: 12px;">Agregar Nueva Beca</h3>
                     <form method="POST" action="" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
                         <input type="hidden" name="accion_agregar" value="1">
                         <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">

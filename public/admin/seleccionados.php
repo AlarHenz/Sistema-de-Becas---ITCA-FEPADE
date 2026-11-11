@@ -24,7 +24,8 @@ $total_seleccionados = count($seleccionados);
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Seleccionados - Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleccionados - ITCA FEPADE</title>
     <link rel="stylesheet" href="/Sistema-de-Becas---ITCA-FEPADE/public/css/style.css">
 </head>
 <body>
@@ -35,7 +36,7 @@ $total_seleccionados = count($seleccionados);
             <?php include '../../includes/header.php'; ?>
             
             <div class="contenido">
-                <h1>Listado de Aspirantes Seleccionados</h1>
+                <h1 class="page-title">Listado de Aspirantes Seleccionados</h1>
                 <p class="subtitulo">Aspirantes en revisión o aprobados (Total: <strong><?php echo $total_seleccionados; ?></strong>)</p>
 
                 <div class="tabla-container">

@@ -1,17 +1,16 @@
 <?php
 // includes/header.php
-// Asegurarse de que la sesión esté iniciada para acceder a $_SESSION
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+$rol = ucfirst($_SESSION['rol'] ?? 'Administrador');
 ?>
 <div class="header">
     <div class="titulo-sistema">
-        SISTEMA DE GESTIÓN DE BECAS - ITCA FEPADE
+        ITCA FEPADE
     </div>
     <div class="usuario-info">
-        <span><?php echo htmlspecialchars($_SESSION['nombre'] ?? 'Invitado'); ?></span>
-        <span>| <?php echo ucfirst($_SESSION['rol'] ?? ''); ?></span>
-        <a href="/Sistema-de-Becas---ITCA-FEPADE/public/logout.php">Cerrar Sesión</a>
+        <span><?php echo htmlspecialchars($rol); ?></span>
+        <a href="/Sistema-de-Becas---ITCA-FEPADE/public/logout.php" class="btn-logout">Cerrar sesión</a>
     </div>
 </div>

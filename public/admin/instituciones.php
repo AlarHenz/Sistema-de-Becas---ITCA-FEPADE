@@ -75,7 +75,8 @@ if ($id_institucion_seleccionada) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Instituciones y Especialidades - Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instituciones y Especialidades - ITCA FEPADE</title>
     <link rel="stylesheet" href="/Sistema-de-Becas---ITCA-FEPADE/public/css/style.css">
 </head>
 <body>
@@ -86,7 +87,7 @@ if ($id_institucion_seleccionada) {
             <?php include '../../includes/header.php'; ?>
             
             <div class="contenido">
-                <h1>Instituciones y Especialidades</h1>
+                <h1 class="page-title">Instituciones y Especialidades</h1>
                 <p class="subtitulo">Configura las instituciones y sus especialidades académicas.</p>
 
                 <?php if ($mensaje_exito): ?>
@@ -97,8 +98,8 @@ if ($id_institucion_seleccionada) {
                 <?php endif; ?>
 
                 <!-- Formulario para agregar institución -->
-                <div class="tarjeta" style="margin-bottom: 20px; border-top-color: #FFCC00;">
-                    <h3 style="color: #B30000; margin-bottom: 10px;">Agregar Nueva Institución</h3>
+                <div class="tarjeta" style="margin-bottom: 24px;">
+                    <h3 style="color: var(--itca-red); font-size: 15px; font-weight: 700; margin-bottom: 12px;">Agregar Nueva Institución</h3>
                     <form method="POST" action="" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
                         <input type="hidden" name="accion_agregar_institucion" value="1">
                         <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
@@ -135,8 +136,8 @@ if ($id_institucion_seleccionada) {
 
                 <!-- Panel de gestión de especialidades (aparece si se seleccionó una institución) -->
                 <?php if ($institucion_actual): ?>
-                    <div class="tarjeta" style="border-top-color: #B30000;">
-                        <h3 style="color: #B30000; margin-bottom: 10px;">
+                    <div class="tarjeta">
+                        <h3 style="color: var(--itca-red); font-size: 15px; font-weight: 700; margin-bottom: 12px;">
                             Especialidades de: <?php echo htmlspecialchars($institucion_actual['nombre_institucion']); ?>
                         </h3>
 

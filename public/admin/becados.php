@@ -28,7 +28,8 @@ $total_becados = count($becados);
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Becados - Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Becarios - ITCA FEPADE</title>
     <link rel="stylesheet" href="/Sistema-de-Becas---ITCA-FEPADE/public/css/style.css">
 </head>
 <body>
@@ -39,15 +40,15 @@ $total_becados = count($becados);
             <?php include '../../includes/header.php'; ?>
             
             <div class="contenido">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
                     <div>
-                        <h1>Aspirantes con Beca</h1>
-                        <p class="subtitulo">Total de becados aprobados: <strong><?php echo $total_becados; ?></strong></p>
+                        <h1 class="page-title" style="margin-bottom: 4px;">Aspirantes con Beca (Becarios)</h1>
+                        <p class="subtitulo" style="margin-bottom: 0;">Total de becados aprobados: <strong><?php echo $total_becados; ?></strong></p>
                     </div>
-                    <div>
-                        <!-- Botones de exportación (lógica en JS) -->
-                        <button onclick="exportarExcel()" class="btn btn-primario">📥 Generar Excel</button>
-                        <button onclick="generarListaCorreos()" class="btn btn-secundario">✉️ Generar Lista de Correos</button>
+                    <div style="display: flex; gap: 8px;">
+                        <!-- Botones de exportación -->
+                        <button onclick="exportarExcel()" class="btn btn-primario">Generar Excel</button>
+                        <button onclick="generarListaCorreos()" class="btn btn-secundario">Generar Lista de Correos</button>
                     </div>
                 </div>
 

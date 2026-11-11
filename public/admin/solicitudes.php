@@ -68,22 +68,31 @@ $total_rechazadas = $pdo->query("SELECT COUNT(*) FROM solicitudes WHERE estado =
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión de Solicitudes - Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Solicitudes - ITCA FEPADE</title>
     <link rel="stylesheet" href="/Sistema-de-Becas---ITCA-FEPADE/public/css/style.css">
     <style>
-        /* Estilo para el panel de edición rápido */
         .panel-edicion {
-            background-color: #fffbe6;
-            padding: 10px;
-            border: 1px solid #FFCC00;
-            border-radius: 4px;
-            margin-top: 5px;
+            background-color: #f9fafb;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            margin-top: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
         .panel-edicion select, .panel-edicion textarea {
             width: 100%;
-            margin-bottom: 5px;
-            padding: 5px;
-            font-size: 12px;
+            margin-bottom: 8px;
+            padding: 7px 10px;
+            font-size: 12.5px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background-color: #ffffff;
+            color: #374151;
+            outline: none;
+        }
+        .panel-edicion select:focus, .panel-edicion textarea:focus {
+            border-color: #b22a14;
         }
     </style>
 </head>

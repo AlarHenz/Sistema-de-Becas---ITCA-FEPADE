@@ -259,96 +259,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
            Ajustes Institucionales ITCA FEPADE & Bootstrap 5
            ======================================================== */
         :root {
-            --itca-red: #B30000;
-            --itca-red-dark: #8F0000;
-            --itca-yellow: #FFCC00;
-            --itca-yellow-light: #FFF8E1;
-            --itca-gray-bg: #f4f6f9;
-        }
-
-        /* Respetar menú lateral institucional */
-        .sidebar {
-            width: 220px;
-            background-color: #ffffff;
-            border-right: 2px solid var(--itca-red);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-        }
-        .sidebar .logo {
-            background-color: var(--itca-red);
-            color: #ffffff;
-            padding: 15px 10px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-            line-height: 1.3;
-        }
-        .sidebar nav a {
-            display: block;
-            padding: 12px 15px;
-            color: #333333 !important;
-            text-decoration: none !important;
-            border-left: 4px solid transparent;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        .sidebar nav a:hover {
-            background-color: #f1f3f5 !important;
-            border-left-color: var(--itca-yellow) !important;
-            color: var(--itca-red) !important;
-        }
-        .sidebar nav a.activo {
-            background-color: var(--itca-red) !important;
-            color: #ffffff !important;
-            border-left-color: var(--itca-yellow) !important;
-            font-weight: 700;
-        }
-
-        /* Respetar barra superior institucional */
-        .header {
-            background-color: var(--itca-red);
-            color: #ffffff;
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-        }
-        .header .titulo-sistema {
-            font-weight: 700;
-            font-size: 15px;
-            letter-spacing: 0.5px;
-        }
-        .header .usuario-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            font-size: 13px;
-        }
-        .header .usuario-info a {
-            color: var(--itca-yellow) !important;
-            text-decoration: none !important;
-            font-weight: 700;
-            transition: opacity 0.2s;
-        }
-        .header .usuario-info a:hover {
-            opacity: 0.85;
-            text-decoration: underline !important;
-        }
-
-        /* Contenedor de contenido */
-        .main-content {
-            background-color: var(--itca-gray-bg);
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-        .contenido-bootstrap {
-            padding: 24px 30px;
-            flex-grow: 1;
+            --itca-red: #b22a14;
+            --itca-red-dark: #921a08;
+            --itca-red-active: #a82015;
+            --itca-gray-bg: #f4f4f4;
         }
 
         /* Botones institucionales */
@@ -363,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
             background-color: var(--itca-red-dark);
             border-color: var(--itca-red-dark);
             color: #ffffff;
-            box-shadow: 0 4px 10px rgba(179, 0, 0, 0.25);
+            box-shadow: 0 4px 10px rgba(178, 42, 20, 0.25);
         }
         .btn-outline-itca {
             color: var(--itca-red);
@@ -376,16 +290,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
             background-color: var(--itca-red);
             border-color: var(--itca-red);
             color: #ffffff;
-            box-shadow: 0 4px 10px rgba(179, 0, 0, 0.2);
+            box-shadow: 0 4px 10px rgba(178, 42, 20, 0.2);
         }
 
         /* Estilo de la tabla de referencia */
         .tabla-referencia-card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
             overflow: hidden;
-            border-top: 4px solid var(--itca-red);
+            border-top: 4px solid var(--itca-red) !important;
         }
         .tabla-referencia thead th {
             background-color: var(--itca-red) !important;
@@ -402,16 +316,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
             font-size: 13px;
             padding: 11px 14px;
             vertical-align: middle;
-            color: #333333;
+            color: #374151;
         }
         .tabla-referencia tbody tr:hover {
-            background-color: var(--itca-yellow-light) !important;
+            background-color: #fbfbfb !important;
         }
 
         /* Zona de carga para Excel (.xlsx) */
         .zona-arrastre-xlsx {
             border: 2px dashed var(--itca-red);
-            border-radius: 12px;
+            border-radius: 8px;
             background-color: #ffffff;
             padding: 38px 25px;
             text-align: center;
@@ -421,9 +335,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
         }
         .zona-arrastre-xlsx:hover, .zona-arrastre-xlsx.arrastrando {
             background-color: #fff9e6;
-            border-color: #198754;
+            border-color: var(--itca-red-dark);
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(25, 135, 84, 0.15);
+            box-shadow: 0 6px 16px rgba(178, 42, 20, 0.12);
         }
         .zona-arrastre-xlsx input[type="file"] {
             position: absolute;
@@ -437,13 +351,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_FILES['archivo_excel']) ||
         }
         .icono-excel {
             font-size: 52px;
-            color: #198754;
+            color: var(--itca-red);
             display: inline-block;
             transition: transform 0.2s ease;
         }
         .zona-arrastre-xlsx:hover .icono-excel {
             transform: scale(1.12);
         }
+    </style>
     </style>
 </head>
 <body>

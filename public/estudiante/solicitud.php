@@ -102,7 +102,8 @@ $especialidades = $pdo->query("SELECT e.*, i.nombre_institucion FROM especialida
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Mi Solicitud - Sistema de Becas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Solicitud - ITCA FEPADE</title>
     <link rel="stylesheet" href="/Sistema-de-Becas---ITCA-FEPADE/public/css/style.css">
 </head>
 <body>
@@ -113,7 +114,7 @@ $especialidades = $pdo->query("SELECT e.*, i.nombre_institucion FROM especialida
             <?php include '../../includes/header.php'; ?>
             
             <div class="contenido">
-                <h1>Mi Solicitud de Beca</h1>
+                <h1 class="page-title">Mi Solicitud de Beca</h1>
                 <p class="subtitulo">Completa los datos para iniciar tu proceso.</p>
 
                 <?php if ($mensaje_exito): ?>
@@ -134,31 +135,31 @@ $especialidades = $pdo->query("SELECT e.*, i.nombre_institucion FROM especialida
                 <form method="POST" action="" enctype="multipart/form-data">
                     
                     <!-- SECCIÓN 1: Datos Personales (solo lectura, vienen del usuario) -->
-                    <div class="tarjeta" style="margin-bottom: 20px; border-top-color: #FFCC00;">
-                        <h3 style="color: #B30000; margin-bottom: 10px;">1. Datos Personales</h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="tarjeta" style="margin-bottom: 24px;">
+                        <h3 style="color: var(--itca-red); font-size: 15px; font-weight: 700; margin-bottom: 12px;">1. Datos Personales</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
                             <div class="form-group">
                                 <label>Nombre Completo</label>
-                                <input type="text" value="<?php echo htmlspecialchars($datos_estudiante['nombre_completo']); ?>" readonly style="background-color: #f0f0f0;">
+                                <input type="text" value="<?php echo htmlspecialchars($datos_estudiante['nombre_completo']); ?>" readonly style="background-color: #f8f9fa;">
                             </div>
                             <div class="form-group">
                                 <label>Carnet</label>
-                                <input type="text" value="<?php echo htmlspecialchars($datos_estudiante['carnet']); ?>" readonly style="background-color: #f0f0f0;">
+                                <input type="text" value="<?php echo htmlspecialchars($datos_estudiante['carnet']); ?>" readonly style="background-color: #f8f9fa;">
                             </div>
                             <div class="form-group">
                                 <label>Correo Institucional</label>
-                                <input type="email" value="<?php echo htmlspecialchars($datos_estudiante['correo_institucional']); ?>" readonly style="background-color: #f0f0f0;">
+                                <input type="email" value="<?php echo htmlspecialchars($datos_estudiante['correo_institucional']); ?>" readonly style="background-color: #f8f9fa;">
                             </div>
                             <div class="form-group">
                                 <label>Teléfono Móvil</label>
-                                <input type="text" value="<?php echo htmlspecialchars($datos_estudiante['telefono_movil']); ?>" readonly style="background-color: #f0f0f0;">
+                                <input type="text" value="<?php echo htmlspecialchars($datos_estudiante['telefono_movil']); ?>" readonly style="background-color: #f8f9fa;">
                             </div>
                         </div>
                     </div>
 
                     <!-- SECCIÓN 2: Información Académica -->
-                    <div class="tarjeta" style="margin-bottom: 20px; border-top-color: #FFCC00;">
-                        <h3 style="color: #B30000; margin-bottom: 10px;">2. Información Académica</h3>
+                    <div class="tarjeta" style="margin-bottom: 24px;">
+                        <h3 style="color: var(--itca-red); font-size: 15px; font-weight: 700; margin-bottom: 12px;">2. Información Académica</h3>
                         <div class="form-group">
                             <label for="id_especialidad">Especialidad de Interés *</label>
                             <select id="id_especialidad" name="id_especialidad" required>
@@ -174,17 +175,17 @@ $especialidades = $pdo->query("SELECT e.*, i.nombre_institucion FROM especialida
                     </div>
 
                     <!-- SECCIÓN 3: Documentos -->
-                    <div class="tarjeta" style="margin-bottom: 20px; border-top-color: #FFCC00;">
-                        <h3 style="color: #B30000; margin-bottom: 10px;">3. Documentos</h3>
+                    <div class="tarjeta" style="margin-bottom: 24px;">
+                        <h3 style="color: var(--itca-red); font-size: 15px; font-weight: 700; margin-bottom: 12px;">3. Documentos</h3>
                         <div class="form-group">
                             <label for="documento_dui">Documento de Identidad (DUI) *</label>
                             <input type="file" id="documento_dui" name="documento_dui" accept=".pdf,.jpg,.jpeg,.png">
-                            <small style="color: #666;">Formatos permitidos: PDF, JPG, PNG. Máximo 5MB.</small>
+                            <small style="color: var(--text-muted);">Formatos permitidos: PDF, JPG, PNG. Máximo 5MB.</small>
                         </div>
                         <?php if ($documento_actual): ?>
                             <p style="margin-top: 10px; font-size: 13px;">
                                 <strong>Archivo actual:</strong> 
-                                <a href="/Sistema-de-Becas---ITCA-FEPADE/public/uploads/<?php echo htmlspecialchars($documento_actual['ruta_archivo']); ?>" target="_blank" style="color: #B30000;">
+                                <a href="/Sistema-de-Becas---ITCA-FEPADE/public/uploads/<?php echo htmlspecialchars($documento_actual['ruta_archivo']); ?>" target="_blank" style="color: var(--itca-red); font-weight: 600;">
                                     Ver documento subido
                                 </a>
                                 <span class="badge badge-<?php echo $documento_actual['estado_documento']; ?>" style="margin-left: 5px;">

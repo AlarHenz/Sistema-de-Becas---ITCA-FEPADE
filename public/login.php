@@ -60,79 +60,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - Sistema de Becas ITCA</title>
     <style>
-        /* Estilos básicos inspirados en la paleta y el diseño de referencia */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        body { display: flex; height: 100vh; }
+        /* Estilos inspirados en la paleta y el diseño institucional ITCA FEPADE */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        body { display: flex; height: 100vh; background-color: #f4f4f4; }
         
-        /* Panel Izquierdo (Rojo) */
+        /* Panel Izquierdo (Rojo Institucional) */
         .panel-izquierdo {
             width: 45%;
-            background-color: #B30000; /* Rojo institucional */
+            background-color: #b22a14;
             color: white;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 40px;
+            padding: 50px;
             position: relative;
             overflow: hidden;
         }
-        /* Simulación del diseño diagonal de la imagen */
         .panel-izquierdo::before {
             content: '';
             position: absolute;
-            bottom: -50px; left: -50px;
+            bottom: -60px; left: -60px;
             width: 150%; height: 50%;
-            background-color: #8B0000;
-            transform: rotate(-15deg);
+            background-color: #921a08;
+            transform: rotate(-12deg);
             z-index: 0;
+            opacity: 0.85;
         }
         .panel-izquierdo h1, .panel-izquierdo p { z-index: 1; position: relative; }
-        .panel-izquierdo h1 { font-size: 2.5rem; margin-bottom: 10px; }
-        .panel-izquierdo p { font-size: 1.1rem; opacity: 0.9; }
+        .panel-izquierdo h1 { font-size: 2.6rem; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.5px; }
+        .panel-izquierdo p { font-size: 1.15rem; opacity: 0.95; line-height: 1.5; }
 
         /* Panel Derecho (Formulario) */
         .panel-derecho {
             width: 55%;
-            background-color: #F8F9FA;
+            background-color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 40px;
         }
         .formulario-login { width: 100%; max-width: 400px; }
-        .formulario-login h2 { color: #333; margin-bottom: 10px; font-size: 1.8rem; }
-        .formulario-login .subtitulo { color: #666; margin-bottom: 30px; font-size: 0.95rem; }
+        .formulario-login h2 { color: #1e2022; margin-bottom: 8px; font-size: 1.85rem; font-weight: 700; }
+        .formulario-login .subtitulo { color: #6b7280; margin-bottom: 28px; font-size: 0.95rem; }
         
         .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #444; font-size: 0.9rem; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 0.9rem; }
         .form-group input {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 1rem;
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .form-group input:focus { outline: none; border-color: #B30000; }
+        .form-group input:focus { border-color: #b22a14; box-shadow: 0 0 0 3px rgba(178, 42, 20, 0.12); }
 
         .btn-ingresar {
             width: 100%;
-            padding: 14px;
-            background-color: #B30000;
+            padding: 13px;
+            background-color: #b22a14;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 1rem;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.2s, box-shadow 0.2s;
         }
-        .btn-ingresar:hover { background-color: #8B0000; }
+        .btn-ingresar:hover { background-color: #921a08; box-shadow: 0 4px 12px rgba(178, 42, 20, 0.2); }
 
         .alert-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 8px;
+            background-color: #fdeded;
+            color: #5f2120;
+            padding: 12px 16px;
+            border-radius: 6px;
             margin-bottom: 20px;
             border: 1px solid #f5c6cb;
             font-size: 0.9rem;

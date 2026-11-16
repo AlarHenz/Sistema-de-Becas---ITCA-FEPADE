@@ -26,6 +26,9 @@ $options = [
 try {
     $pdo = new PDO($dsn, $username, $password, $options);
 } catch (PDOException $e) {
+    if (defined('API_REQUEST')) {
+        throw $e;
+    }
     // Si falla, detenemos la ejecución y mostramos un mensaje genérico
     // (No mostrar detalles del error en producción por seguridad).
     die("Error de conexión a la base de datos. Por favor, verifica que XAMPP y MySQL estén activos.");
